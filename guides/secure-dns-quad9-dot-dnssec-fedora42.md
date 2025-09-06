@@ -1,8 +1,18 @@
 # How to Configure Secure DNS with Quad9, DNS-over-TLS, and DNSSEC on Fedora 42 (KDE)
 
+> By default, DNS queries are often sent in plaintext, meaning your ISP or anyone on the path can see which sites you visit.  
+> Using Quad9 with DNS-over-TLS (DoT) and DNSSEC ensures your queries are private, authenticated, and filtered against malicious domains.
+
+
 This guide explains how to set up **Quad9** as your DNS provider on Fedora 42 with KDE, enabling **DNS-over-TLS (DoT)** and **DNSSEC validation** for maximum privacy and security.
 
----
+## Prerequisites
+- Fedora 42 (KDE edition, with `systemd-resolved` enabled)
+- Root privileges (`sudo`)
+- Basic familiarity with the terminal
+
+
+* * *
 
 ## Step 1: Check Current DNS Setup
 
@@ -21,7 +31,7 @@ You should see:
 /etc/resolv.conf -> ../run/systemd/resolve/stub-resolv.conf
 ```
 
----
+* * *
 
 ## Step 2: Configure Quad9 with DNS-over-TLS
 
@@ -53,7 +63,7 @@ You should see:
 - `DNSSEC=yes/supported`
 - `DNS Servers: 9.9.9.9 149.112.112.112`
 
----
+* * *
 
 ## Step 3: Test DNS-over-TLS
 
@@ -63,7 +73,7 @@ sudo tcpdump -i wlp2s0 port 53
 ```
 You should see no queries, since DNS is encrypted over port 853.
 
----
+* * *
 
 ## Step 4: Test DNSSEC
 
@@ -77,7 +87,7 @@ Expected results:
 - `sigfail` → returns **SERVFAIL** (bad signature rejected).
 - `sigok` → resolves successfully with the `ad` (Authenticated Data) flag.
 
----
+* * *
 
 ## What You Achieved
 
@@ -86,7 +96,7 @@ Expected results:
 - Responses are validated with **DNSSEC**.
 - **EDNS Client Subnet (ECS)** is disabled by Quad9 → better privacy.
 
----
+* * *
 
 ## Optional: Tailscale / Docker
 
@@ -96,22 +106,30 @@ Expected results:
 * * *
 ## How to check per-interface behavior
 
-For example; When plugging in an Ethernet dongle, just run:
-`resolvectl status`
-
+When you plug in an Ethernet dongle, run:
+```
+resolvectl status
+````
 You’ll see a new Link entry (probably enp…) and it should list:
 ```
 Protocols: … +DNSOverTLS
 DNS Servers: 9.9.9.9 149.112.112.112
 ```
 
-If that’s the case → everything is consistent across Wi-Fi and Ethernet.
+If that’s the case, everything is consistent across Wi-Fi and Ethernet.
 
----
+* * *
 
 ## Conclusion
 
 You now have a **hardened DNS setup** on Fedora 42 with KDE using Quad9 + DoT + DNSSEC.  
 This prevents ISP snooping, ensures authenticity of DNS responses, and blocks known malicious domains by default.
+
+* * *
+## References
+- [Quad9 Official Site](https://www.quad9.net)
+- [systemd-resolved Documentation](https://www.freedesktop.org/software/systemd/man/resolved.conf.html)
+- [DNSSEC Explained (ICANN)](https://www.icann.org/resources/pages/dnssec-qaa-2014-01-29-en)
+
 
 
