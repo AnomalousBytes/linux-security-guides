@@ -11,6 +11,8 @@ This guide explains how to set up **Quad9** as your DNS provider on Fedora 42 wi
 - Root privileges (`sudo`)
 - Basic familiarity with the terminal
 
+> **Note**: This guide is written for Fedora 42 (KDE), but the steps are nearly identical on other Linux distributions that use `systemd-resolved`.  
+> You may encounter small differences in configuration paths or networking defaults depending on your distro.
 
 * * *
 
