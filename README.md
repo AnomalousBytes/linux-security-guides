@@ -11,4 +11,5 @@ Covers practical configurations and standards-based auditing tools.
 
 ## Why this repo?
 Linux gives you control, but security requires effort.  
+
 This repo provides practical, easy-to-follow instructions to harden your system while explaining *why* each step matters.
