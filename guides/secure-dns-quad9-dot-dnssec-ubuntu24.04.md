@@ -129,9 +129,14 @@ sudo tcpdump -i wlo1 port 853
 
 ## Step 6: Test DNSSEC
 
-Run:
+Run these two checks:
+
+Deliberately broken signature and should FAIL validation
 ```bash
 dig +dnssec sigfail.verteiltesysteme.net
+```
+Valid signature and should PASS; look for "ad" in the flags line
+```bash
 dig +dnssec sigok.verteiltesysteme.net
 ```
 
@@ -139,6 +144,10 @@ Expected results:
 - `sigfail` → returns **SERVFAIL** (bad signature rejected).
 - `sigok` → resolves successfully with the `ad` (Authenticated Data) flag.
 
+Optional cross-check with systemd-resolved. Look for: Data was authenticated: yes
+```bash
+resolvectl query sigok.verteiltesysteme.net --legend=yes
+```
 * * *
 
 ## What You Achieved
