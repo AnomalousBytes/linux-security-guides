@@ -71,10 +71,10 @@ sudo nano /etc/systemd/resolved.conf
 2. Add the following:
 ```ini
 [Resolve]
-DNS=9.9.9.9 149.112.112.112
-FallbackDNS=2620:fe::fe 2620:fe::9
+DNS=9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net 2620:fe::fe#dns.quad9.net 2620:fe::9#dns.quad9.net
+FallbackDNS=
 DNSOverTLS=yes
-DNSSEC=yes
+DNSSEC=allow-downgrade
 ```
 
 3. Save and restart the service:
