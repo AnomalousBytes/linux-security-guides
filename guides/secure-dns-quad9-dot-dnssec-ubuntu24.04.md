@@ -131,8 +131,8 @@ sudo tcpdump -i wlo1 port 853
 
 Run:
 ```bash
-dig sigfail.verteiltesysteme.net
-dig sigok.verteiltesysteme.net
+dig +dnssec sigfail.verteiltesysteme.net
+dig +dnssec sigok.verteiltesysteme.net
 ```
 
 Expected results:
