@@ -118,7 +118,12 @@ Check that no plaintext DNS traffic is being sent on port 53:
 ```bash
 sudo tcpdump -i wlo1 port 53
 ```
-You should see no queries, since DNS is encrypted over port 853.
+You should see no queries, since DNS is encrypted over port 853. 
+
+For a positive confirmation also look for TLS to 853:
+```bash
+sudo tcpdump -i wlo1 port 853
+```
 
 * * *
 
