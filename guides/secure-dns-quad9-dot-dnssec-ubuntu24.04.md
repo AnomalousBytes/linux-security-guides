@@ -88,7 +88,7 @@ resolvectl status
 ```
 You should see:
 - `DNSOverTLS=yes`
-- `DNSSEC=yes/supported`
+- `DNSSEC=DNSSEC=allow-downgrade/supported`
 - `DNS Servers: 9.9.9.9 149.112.112.112`
 
 * * *
