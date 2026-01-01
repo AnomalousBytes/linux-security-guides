@@ -24,33 +24,32 @@
   │   │   ├── 10-Disciplinary Policy/
   │   │   ├── 11-Personnel Security Policy/
   │   │   ├── 12-Security Awareness and Training Policy/
-  │   │   ├── 13-Certification & Training Policy/
-  │   │   └── 14-Social Media Policy/
+  │   │   └── 13-Social Media Policy/
   │   ├── SOPs/
   │   └── Templates & Logs/
   ├── A.7 Physical Controls/
   │   ├── Evidence/
   │   ├── Policies/
-  │   │   ├── 15-Clean Desk and Clear Screen Policy/
-  │   │   ├── 16-Equipment Handling and Disposal Policy/
-  │   │   └── 17-Physical and Environmental Security Policy/
+  │   │   ├── 14-Clean Desk and Clear Screen Policy/
+  │   │   ├── 15-Equipment Handling and Disposal Policy/
+  │   │   └── 16-Physical and Environmental Security Policy/
   │   ├── SOPs/
   │   └── Templates & Logs/
   ├── A.8 Technological Controls/
   │   ├── Evidence/
   │   ├── Policies/
-  │   │   ├── 18-Access Control Policy/
-  │   │   ├── 19-Data Integrity Policy/
-  │   │   ├── 20-Data Retention and Disposal Policy/
-  │   │   ├── 21-Key Management and Cryptography Policy/
-  │   │   ├── 22-Network Security Policy/
-  │   │   ├── 23-Server Security Policy/
-  │   │   ├── 24-Vulnerability and Penetration Testing Policy/
-  │   │   ├── 25-Workstation and Mobile Device Policy/
-  │   │   ├── 26-Change Management Policy/
-  │   │   ├── 27-Secure Development Policy/
-  │   │   ├── 28-Cloud Security Policy/
-  │   │   └── 29-Bring Your Own Device (BYOD) Policy/
+  │   │   ├── 17-Access Control Policy/
+  │   │   ├── 18-Data Integrity Policy/
+  │   │   ├── 19-Data Retention and Disposal Policy/
+  │   │   ├── 20-Key Management and Cryptography Policy/
+  │   │   ├── 21-Network Security Policy/
+  │   │   ├── 22-Server Security Policy/
+  │   │   ├── 23-Vulnerability and Penetration Testing Policy/
+  │   │   ├── 24-Workstation and Mobile Device Policy/
+  │   │   ├── 25-Change Management Policy/
+  │   │   ├── 26-Secure Development Policy/
+  │   │   ├── 27-Cloud Security Policy/
+  │   │   └── 28-Bring Your Own Device (BYOD) Policy/
   │   ├── SOPs/
   │   │   └── Change Management Process/
   │   ├── Standards/
