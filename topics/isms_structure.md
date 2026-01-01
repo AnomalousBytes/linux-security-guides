@@ -4,8 +4,8 @@
   │   ├── Evidence/
   │   ├── Policies/
   │   │   ├── 01-Backup and Restoration Policy/
-  │   │   ├── 01-Business Continuity and Disaster Recovery Policy/
-  │   │   ├── 02-Corporate Ethics Policy/
+  │   │   ├── 02-Business Continuity and Disaster Recovery Policy/
+  │   │   ├── 03-Corporate Ethics Policy/
   │   │   ├── 04-Incident Management Policy/
   │   │   ├── 05-Information Security Policy/
   │   │   ├── 06-Internal Audits Policy/
