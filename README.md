@@ -8,7 +8,7 @@ additional content spanning broader cybersecurity and security governance topics
 
 ## Topics Covered
 
-### Linux Security & Hardening
+### Security & Hardening
 - Secure DNS with Quad9 + DNS-over-TLS + DNSSEC
 - Networking privacy & hardening
 - CIS Benchmarks with OpenSCAP
