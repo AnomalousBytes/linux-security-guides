@@ -1,8 +1,9 @@
 # Linux Security Guides
 
 A growing collection of step-by-step guides and reference material for improving
-security and privacy, with a focus on Linux-based systems and on connecting
-hands-on hardening with the standards and governance practices behind it.
+security and privacy. The hands-on guides focus on Linux-based systems. The
+governance and standards topics (ISMS, ISO/IEC 27001, Shadow IT) are
+platform-agnostic and apply to any environment.
 
 The aim is to be practical and honest. Every guide is written to be followed end
 to end, carries a *last verified* date, and explains the reason behind each step,
@@ -60,6 +61,24 @@ above shows where it is heading.
 - Every guide carries a **Last verified** date and the versions it was tested on,
   because security guidance goes stale.
 
+## Contributing
+
+Corrections and improvements are welcome. If a guide is outdated, inaccurate, or
+unclear, open an issue or a pull request. Please keep the existing structure and
+update the **Last verified** date when you re-test a guide.
+
+## Disclaimer
+
+These guides are provided as-is, without warranty, for educational purposes. They
+involve administrative (`sudo`) changes to system configuration. Read each step,
+understand what it does, and test on a non-critical system before applying it
+anywhere important. You are responsible for changes you make to your own systems.
+
 ## License
 
-Released under the [MIT License](LICENSE).
+The content in this repository is licensed under
+[Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE). You may
+share and adapt it, including commercially, with attribution to anoBytes
+Technology Solutions.
+
+© 2026 anoBytes Technology Solutions
