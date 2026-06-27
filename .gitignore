@@ -1,0 +1,13 @@
+# Claude Code local instructions — never commit or push
+CLAUDE.md
+claude.md
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS cruft
+.DS_Store
+Thumbs.db
