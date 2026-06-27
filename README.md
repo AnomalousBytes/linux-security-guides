@@ -16,7 +16,7 @@ not just what to type.
 - [Secure DNS with Quad9, DNS-over-TLS & DNSSEC on Fedora 44 (KDE)](guides/secure-dns-quad9-dot-dnssec-fedora-44.md)
 - [Secure DNS with Quad9, DNS-over-TLS & DNSSEC on Ubuntu 26.04 LTS](guides/secure-dns-quad9-dot-dnssec-ubuntu-26.04.md)
 - [Secure DNS with Quad9, DNS-over-TLS & DNSSEC on CachyOS](guides/secure-dns-quad9-dot-dnssec-cachyos.md)
-- [Secure SSH with key-based authentication & fail2ban (Fedora, Ubuntu, CachyOS)](guides/secure-ssh-with-fail2ban.md)
+- [Secure and harden SSH with fail2ban, CIS/NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/secure-ssh-with-fail2ban.md)
 
 ### Topics (concepts & governance)
 
