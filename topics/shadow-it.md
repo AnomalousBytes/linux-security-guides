@@ -46,7 +46,7 @@ For discovery, network monitoring alone is no longer enough. It misses cloud-to-
 
 Treat Shadow IT as an ongoing risk within your ISMS: track it in your risk register, review it during management meetings, and include it in your continuous improvement cycle.
 
-The goal is **enablement, not prohibition.** Shadow IT usually appears because the approved path is too slow, so the most effective control is often a fast, low-friction sanctioned request process. It removes the incentive to go around governance in the first place. When you combine that with discovery and assessment, Shadow IT shifts from a hidden problem to a known and managed risk, aligned with the continuous improvement goals of a mature ISMS.
+Make the sanctioned path the easy path. Shadow IT usually appears because the approved path is too slow, so a fast, low-friction request process is often the most effective control: it removes the incentive to go around governance in the first place. When you combine that with discovery and assessment, Shadow IT shifts from a hidden problem to a known and managed risk, aligned with the continuous improvement goals of a mature ISMS.
 
 ---
 

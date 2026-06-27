@@ -31,7 +31,7 @@ These three technologies solve **different** problems and are complementary. Tur
 | --- | --- | --- |
 | **DNS-over-TLS (DoT)** | *Confidentiality + integrity in transit.* Encrypts the lookup between your machine and the resolver so the network path cannot read or alter it. | Does not prove the *answer* is authentic if the resolver itself is lying or misconfigured. |
 | **DNSSEC** | *Authenticity + integrity of the data.* Cryptographic signatures let a validating resolver detect forged or tampered records (the lookup fails instead). | Does not encrypt anything. A DNSSEC-only lookup is still readable on the wire. |
-| **Quad9 (the resolver)** | A privacy-respecting recursive resolver that **blocks known-malicious domains** and does **not** send EDNS Client Subnet (ECS) data. | Quad9 still *sees* your queries (it has to resolve them). It is not anonymity. See [Limitations](#limitations-what-this-does-and-does-not-hide). |
+| **Quad9 (the resolver)** | A recursive resolver, run by a non-profit, that **blocks known-malicious domains** and does **not** send EDNS Client Subnet (ECS) data. | Quad9 still *sees* your queries (it has to resolve them). It is not anonymity. See [Limitations](#limitations-what-this-does-and-does-not-hide). |
 
 Used together: DoT hides and protects the lookup in transit, DNSSEC proves the
 record was not forged, and Quad9 filters known threats.

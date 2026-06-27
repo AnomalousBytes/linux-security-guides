@@ -874,8 +874,8 @@ sudo systemctl disable --now fail2ban
 - Cryptography is left to strong, self-updating defaults (or system crypto
   policies and FIPS mode on Fedora/RHEL).
 - **fail2ban** bans repeat offenders where SSH is still publicly reachable.
-- Best of all, you have the option to take SSH **off the public internet** behind
-  an identity-based overlay, which removes the public attack surface entirely.
+- The strongest option is to take SSH **off the public internet** behind an
+  identity-based overlay, which removes the public attack surface entirely.
 
 * * *
 
