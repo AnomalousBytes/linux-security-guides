@@ -19,22 +19,27 @@ The order of priority matters, so be honest about what each part buys you:
   for a server.** A port that the public internet cannot reach cannot be
   brute-forced or hit by an internet-borne 0-day. This is covered in
   [Step 9](#step-9-keep-ssh-off-the-public-internet-overlay-networks).
-- **Key-only authentication is the core host control.** With
-  `PasswordAuthentication no`, brute-force password guessing cannot succeed.
+- **Key-only authentication is the core host control.** With both
+  `PasswordAuthentication no` and `KbdInteractiveAuthentication no` (Step 5),
+  there is no password path left for brute force to guess.
 - **fail2ban is noise and load reduction, not your primary defense.** Once
   passwords are off, bots cannot get in regardless. Its value shrinks further
   once SSH is no longer publicly reachable (see Step 9).
 - **A non-standard port is obscurity, not security.** It reduces automated scan
   noise but stops no determined attacker. It is optional and covered last.
 
-This guide maps its settings to the **CIS Benchmark** for OpenSSH and to **NIST
-SP 800-53 Rev 5** and **NISTIR 7966**. See
+This guide maps its settings to the SSH-server section of the **CIS Linux
+Benchmarks** (there is no standalone "CIS OpenSSH" benchmark; the SSH controls
+live inside the Distribution Independent Linux and per-distro benchmarks) and to
+**NIST SP 800-53 Rev 5** and **NISTIR 7966**. See
 [CIS and NIST alignment](#cis-and-nist-alignment) for the mapping.
 
 > **Lockout warning:** every step here can lock you out of a remote machine if
 > done out of order. Keep your current SSH session open the entire time, test
 > changes from a second terminal before closing it, and on a cloud VM know where
-> your provider's serial or rescue console is before you start.
+> your provider's recovery console is before you start. New to Linux? Read
+> [Before you start](#before-you-start) first; it explains the second terminal,
+> the placeholders, the recovery console, and the jargon used below.
 
 * * *
 
@@ -74,6 +79,79 @@ A few cross-distro facts worth stating once:
 - A non-root user account on the server that can use `sudo`.
 - Terminal access to both the server and the machine you will connect from.
 - The OpenSSH **client** on the machine you connect from (`ssh`, `ssh-keygen`).
+
+* * *
+
+## Before you start
+
+If you are new to Linux, read this short orientation first; the steps assume
+these conventions.
+
+**Two machines.** You work with the computer you sit at (your **laptop**, also
+called the client) and the **server** you are securing (often a rented cloud
+machine, also called a VPS, a Virtual Private Server). The key generation in
+Step 3 runs on your laptop. Every other step runs on the server, inside an SSH
+session. If you lose track, run `hostname` to see which machine you are on.
+
+**Replace the placeholders.** Commands contain stand-in values you must change to
+your own:
+
+- `you` is your login name on the server. Run `whoami` on the server to see it.
+- `server` is the server's IP address or hostname, for example `203.0.113.10` or
+  `host.example.com`, so `ssh you@server` becomes something like
+  `ssh alex@203.0.113.10`.
+- `100.x.y.z` (Step 9) is an address a command prints for you; use the exact
+  value shown.
+- `ssh-users` and `10-hardening.conf` are names this guide picks; keep them.
+
+**Keep a second terminal open.** Several steps say to test "from a second
+terminal." That means open another terminal window on your laptop (in GNOME
+Terminal, **File > New Window** or **Ctrl+Shift+N**) and start a fresh
+`ssh you@server` there, while leaving your first session connected and untouched.
+If a change breaks login, the original window is still in, so you can undo it.
+This is the safety net for the whole guide.
+
+**Editing files.** When a step says `sudo nano <file>`, it opens the nano text
+editor. Paste the block shown below the command into the editor, then press
+**Ctrl+O** and Enter to save and **Ctrl+X** to exit. A block that looks like file
+contents (settings, not commands) goes inside the file.
+
+**reload vs restart.** `sudo systemctl reload sshd` makes the running SSH service
+re-read its config without dropping current connections, so your session stays
+up. `sudo systemctl restart sshd` fully stops and starts it (sessions can drop)
+and is only needed when the listening port changes.
+
+**If you do lock yourself out.** A cloud provider gives you an out-of-band
+**recovery console** (often labelled "Serial Console", "VNC console", or
+"Recovery mode" in the dashboard, for example AWS EC2 Serial Console,
+DigitalOcean Recovery Console, or Hetzner/Linode LISH) that logs you in even when
+SSH is broken. Find yours before you start.
+
+**A few terms used below.**
+
+- **daemon** is a program that runs in the background as a service (sshd is the
+  SSH daemon).
+- **drop-in** is a small extra config file (here under
+  `/etc/ssh/sshd_config.d/`) read in addition to the main config, so your changes
+  stay separate and easy to remove.
+- **socket activation** (Ubuntu) means systemd holds the SSH port open and starts
+  a fresh sshd per connection, so config changes apply on the next login
+  automatically and a port change means restarting `ssh.socket`.
+- **firewall** controls which network ports are reachable. Fedora and RHEL use
+  **firewalld**; Ubuntu and CachyOS use **ufw**.
+- **SELinux** (Fedora and RHEL, in "enforcing" mode) is an extra security layer
+  that, among other things, only lets sshd use ports labelled as SSH ports, which
+  is why changing the port needs a `semanage` command.
+- **PAM** is the framework Linux programs use to check logins; it is how you add
+  extras such as a one-time code or account lockout.
+- **EPEL** is a trusted community package repository for RHEL (fail2ban lives
+  there).
+- **FIPS** is a US-government cryptography standard; it is only relevant for
+  federal or regulated systems. Otherwise skip it.
+- **bastion** or **jump host** is one hardened server you SSH into first, then
+  hop to other machines from there.
+- **file modes 700 and 600** mean only the owner can use the folder (700) or
+  read and write the file (600); SSH refuses keys whose permissions are looser.
 
 * * *
 
@@ -124,9 +202,10 @@ it is `ssh-keygen`'s default.
 ssh-keygen -t ed25519 -C "you@your-laptop-2026"
 ```
 
-Accept the default file location and **set a passphrase** when prompted. The
-passphrase encrypts the private key on disk, so a stolen laptop does not equal a
-stolen key. NISTIR 7966 treats SSH keys as authenticators (NIST control IA-5):
+The `-C` text is just a label to help you recognize this key later; it need not
+be a real email and does not affect security. Accept the default file location
+and **set a passphrase** when prompted. The passphrase encrypts the private key
+on disk, so a stolen laptop does not equal a stolen key. NISTIR 7966 treats SSH keys as authenticators (NIST control IA-5):
 protect them with a passphrase, do not copy or share private keys, and rotate
 them on a defined schedule and on suspected compromise.
 
@@ -180,7 +259,9 @@ id you            # confirm 'ssh-users' is listed
 > and `sudo` access. `id you` confirms the group was added to `/etc/group`; a
 > brand-new SSH login is checked against the updated group immediately, but log
 > out and back in so your interactive session's own credentials also carry the
-> new group (for `sudo` and file access).
+> new group (for `sudo` and file access). Re-logging in now is safe because the
+> lock-you-out settings are not applied until Step 5; keep that fresh session open
+> as your safety net through Step 5.
 
 * * *
 
@@ -248,7 +329,8 @@ What the less obvious lines do, and the caveats:
   **`MaxSessions 4`** are the CIS values. Raise `MaxSessions` toward 10 if you
   rely on SSH session multiplexing.
 - **`ClientAliveInterval 300` / `ClientAliveCountMax 3`** drop unresponsive
-  connections after roughly 15 to 20 minutes (NIST AC-12, session termination).
+  connections after about 15 minutes (300s x 3 = 900s; NIST AC-12, session
+  termination).
   CIS editions disagree on the exact numbers: older editions use a 300-second
   interval with count 0, while v2.0.0 and later use a 15-**second** interval with
   count 3. The 300/3 here is an operational middle ground that matches neither
@@ -256,11 +338,12 @@ What the less obvious lines do, and the caveats:
   probes drop genuinely dead links only; an idle but connected session stays,
   because the client answers the probes automatically.
 - **`DisableForwarding yes`** (a CIS Level 2 recommendation, available since
-  OpenSSH 7.4) turns off SSH forwarding. On OpenSSH **before 10.0**, including
-  RHEL 9's 8.7, this directive does not fully block X11 and agent forwarding
-  (CVE-2025-32728), which is why the explicit `X11Forwarding no`,
-  `AllowAgentForwarding no`, and `AllowTcpForwarding no` lines are included as
-  well; they work on every version here. **Comment out the whole forwarding block
+  OpenSSH 7.4) turns off SSH forwarding. On OpenSSH **before 10.0** this directive
+  does not fully block X11 and agent forwarding (CVE-2025-32728). RHEL 9 (8.7) is
+  affected; RHEL 10 ships 9.9p1 but carries the backported fix
+  (`openssh-9.9p1-11.el10`), and Fedora, Ubuntu, and CachyOS are all on 10.x. The
+  explicit `X11Forwarding no`, `AllowAgentForwarding no`, and `AllowTcpForwarding
+  no` lines are included so forwarding is off everywhere regardless. **Comment out the whole forwarding block
   if you use SSH tunnels (`ssh -L`, `-D`), agent forwarding to a jump host, or
   tools that depend on forwarding.**
 - **`LogLevel VERBOSE`** also logs the key fingerprint used to
@@ -273,8 +356,9 @@ What the less obvious lines do, and the caveats:
   configuration options, including `Protocol`, were removed in OpenSSH 7.6
   (2017).
 
-**Create the warning banner** that `Banner` points to (CIS 5.2.19). Use your
-organization's approved authorized-use notice:
+**Create the warning banner** that `Banner` points to (CIS 5.2.19). The default
+text below is fine for personal use; replace it with your organization's approved
+notice if you have one. The point is only that a warning is shown before login:
 
 ```bash
 sudo tee /etc/issue.net >/dev/null <<'EOF'
@@ -295,9 +379,10 @@ sudo chmod 600 /etc/ssh/sshd_config /etc/ssh/sshd_config.d/10-hardening.conf
 sudo sshd -t
 ```
 
-This prints nothing and exits 0 if the config is valid. If `sshd` is not on your
-`PATH`, use `sudo /usr/sbin/sshd -t`. A syntax error here does not affect the
-running service or your current session.
+If the command shows no output and returns you to the prompt, the config is
+valid. If you instead get `sshd: command not found`, run it with the full path:
+`sudo /usr/sbin/sshd -t`. A syntax error here does not affect the running service
+or your current session.
 
 **Apply it:**
 
@@ -319,18 +404,23 @@ ssh you@server
 sudo sshd -T | grep -Ei 'passwordauthentication|permitrootlogin|allowgroups|maxauthtries'
 ```
 
-Only close your original session once a fresh key-only login as an `ssh-users`
-member works.
+The second command prints the server's effective settings for those keywords;
+seeing lines such as `passwordauthentication no` and `permitrootlogin no` is
+success, not an error. Only close your original session once a fresh key-only
+login as an `ssh-users` member works.
 
 * * *
 
 ## Step 6: Cryptographic algorithms
 
-Modern OpenSSH (9.x and 10.x) already defaults to strong AEAD ciphers,
-encrypt-then-MAC MACs, and post-quantum key exchange, and it drops weak
-algorithms each release. A hardcoded list copied from an older guide (including
-older CIS algorithm lists) tends to **remove** newer, stronger algorithms. So the
-approach differs by distribution:
+In plain terms, a *cipher* encrypts your traffic, a *MAC* checks the traffic was
+not tampered with, and *key exchange* is how the two ends agree on a shared
+secret. Modern OpenSSH (8.x and newer, so every distribution here) already picks
+strong ones by default and removes weak algorithms each release. A hardcoded list
+copied from an older guide (including older CIS algorithm lists) tends to
+**remove** newer, stronger algorithms. The short version: on Ubuntu and CachyOS,
+leave the defaults alone; on Fedora and RHEL, set the system crypto policy below;
+touch FIPS only if a regulation requires it. The full approach by distribution:
 
 **Fedora and RHEL: use system-wide crypto policies, not `sshd_config`.** On these
 systems `sshd` follows `/etc/crypto-policies`, and `Ciphers`/`MACs`/
@@ -392,7 +482,9 @@ sudo semanage port -a -t ssh_port_t -p tcp 2222
 If `semanage` is missing: `sudo dnf install policycoreutils-python-utils`.
 Ubuntu and CachyOS do not need this.
 
-**3. Set the port in your drop-in and validate:**
+**3. Set the port in your drop-in and validate.** The first command appends a
+`Port 2222` line to your hardening file (`tee -a` means "append"); you could
+instead open the file in `nano` and add the line by hand.
 
 ```bash
 echo 'Port 2222' | sudo tee -a /etc/ssh/sshd_config.d/10-hardening.conf
@@ -468,8 +560,10 @@ sudo nano /etc/fail2ban/jail.local
 # Read auth events from the systemd journal (works on all of these distros).
 backend  = systemd
 
-# Never ban these. Add your static admin IP or LAN so a fat-fingered login
-# never locks you out. Space-separated; CIDR allowed.
+# Never ban these. Add the IP you connect from so a few fumbled logins never
+# lock you out (find it by running 'curl ifconfig.me' on your laptop). You can
+# list single IPs or whole ranges like 192.168.1.0/24. Skip your own IP if it
+# changes often, or you could end up trusting someone else's address later.
 ignoreip = 127.0.0.1/8 ::1
 
 # 4 failures within 10 minutes earns a 1 hour ban (matches MaxAuthTries 4).
@@ -519,11 +613,12 @@ mesh, and only enrolled, authenticated devices can reach each other. You then
 firewall SSH so it is reachable only over that overlay, and close the public
 port. Two good options:
 
-**Tailscale** is a mesh VPN built on WireGuard. It adds NAT traversal, a
-coordination plane that distributes public keys and access policy, and a
-peer-to-peer encrypted data plane. Each device joins your private network (a
-"tailnet") and gets a stable `100.x` address from the carrier-grade NAT range,
-with access between devices governed by ACLs. It also offers **Tailscale SSH**,
+**Tailscale** creates a small private network of only your own devices, encrypted
+end to end, that works even when they sit behind home or office routers.
+Technically it is a mesh VPN built on WireGuard. Each device joins your private
+network (a "tailnet") and gets a stable private `100.x` address that only tailnet
+members can reach, with access between devices governed by simple rules (ACLs,
+access control lists). It also offers **Tailscale SSH**,
 where Tailscale itself handles SSH authentication and authorization within the
 tailnet using device identity and policy rules, including a "check mode" that can
 force re-authentication (with MFA) before high-risk connections such as
@@ -533,43 +628,63 @@ To restrict a normal `sshd` to the tailnet and remove public SSH, get onto the
 tailnet first and confirm a tailnet login works **before** you remove the public
 rule, or you will lock yourself out.
 
-**1. Bring the node onto the tailnet** and note its address:
+**1. Install Tailscale and bring the node onto the tailnet.** Follow the one-line
+installer for your distribution at
+[tailscale.com/download](https://tailscale.com/download), then:
 
 ```bash
-sudo tailscale up
-tailscale ip -4        # shows the node's 100.x address
+sudo tailscale up      # prints a URL; open it to sign in and authorize this device
+tailscale ip -4        # shows this node's private 100.x address
 ```
 
-**2. From a SECOND terminal, confirm SSH works over the tailnet:**
+**2. From a SECOND terminal, confirm SSH works over the tailnet** (replace the
+address with the one printed above):
 
 ```bash
-ssh you@100.x.y.z      # use the address from the previous command
+ssh you@100.x.y.z
 ```
 
 Do not proceed until this succeeds.
 
-**3. Allow the Tailscale interface and set deny-by-default** (the public SSH rule
-is still in place, so your current session is safe):
+**3. Allow the Tailscale interface and deny other inbound by default.** The public
+SSH rule is still in place, so your current session stays up. `tailscale0` is the
+virtual network interface Tailscale creates; allowing it permits SSH over the
+tailnet only.
 
 ```bash
+# Ubuntu and CachyOS (ufw)
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow in on tailscale0
 sudo ufw reload
+
+# Fedora and RHEL (firewalld): put the overlay interface in the trusted zone
+sudo firewall-cmd --permanent --zone=trusted --change-interface=tailscale0
+sudo firewall-cmd --reload
 ```
 
-**4. Only now remove the public SSH rule:**
+> On Fedora and RHEL the `--permanent` change only takes effect after the
+> `firewall-cmd --reload` above (the ufw rules apply immediately). Confirm with
+> `sudo firewall-cmd --zone=trusted --list-interfaces`. `tailscale0` is created by
+> the Tailscale daemon and is normally not managed by NetworkManager, so this
+> binding survives reboots; if your NetworkManager does manage the interface, also
+> pin the zone so a reconnect cannot reset it to `public`:
+> `sudo nmcli connection modify <connection> connection.zone trusted`.
+
+**4. Only now remove the public SSH rule** (after step 2's tailnet login worked):
 
 ```bash
-sudo ufw delete allow OpenSSH    # Ubuntu; on CachyOS the rule is named 'ssh':
-                                 # sudo ufw delete allow ssh
+# Ubuntu (rule named OpenSSH) or CachyOS (rule named ssh)
+sudo ufw delete allow OpenSSH     # CachyOS: sudo ufw delete allow ssh
 sudo ufw reload
+
+# Fedora and RHEL (firewalld): drop ssh from the public zone
+sudo firewall-cmd --permanent --zone=public --remove-service=ssh
+sudo firewall-cmd --reload
 ```
 
 After this, SSH to the server's public IP times out, while SSH to its `100.x`
-Tailscale address still works for authenticated tailnet users. (Tailscale's own
-ufw guide phrases the last step as `sudo ufw delete 22/tcp`; delete whichever SSH
-allow rule `sudo ufw status numbered` shows.)
+Tailscale address still works for authenticated tailnet users.
 
 **Defined Networking** (defined.net) is a managed control plane for **Nebula**,
 an open-source overlay network created at Slack. Nebula uses a certificate-
@@ -579,8 +694,13 @@ peers discover each other and punch through NAT without opening inbound firewall
 ports. Nebula also has a built-in, group-based host firewall. Defined Networking
 adds a web dashboard, automatic certificate and key distribution and rotation,
 and a host agent (DNClient), so you do not have to run the CA and distribute
-certificates by hand. As with Tailscale, you bind SSH to the overlay and close
-the public port.
+certificates by hand. (A *lighthouse* is an always-reachable helper node that
+lets your other nodes find each other through home or office routers; a
+*certificate authority* is the trusted signer that issues each node its identity.)
+As with Tailscale, you bind SSH to the overlay and close the public port: use the
+same firewall steps as above, substituting Nebula's interface (typically
+`nebula1`) for `tailscale0`, and keep the same order, confirming an overlay login
+works before you remove the public rule.
 
 **Why this is better than a publicly exposed management port.** Identity-based
 overlays move SSH onto a private, mutually authenticated network and let you take
@@ -620,10 +740,13 @@ For higher-assurance servers, add a second factor (NIST IA-2(1)):
 
 - **TOTP via PAM:** install a PAM TOTP module (for example
   `libpam-google-authenticator` on Ubuntu, `google-authenticator` on
-  Fedora/RHEL), enable it in `/etc/pam.d/sshd`, set
-  `KbdInteractiveAuthentication yes`, and require both factors with
-  `AuthenticationMethods publickey,keyboard-interactive:pam`. This forces an SSH
-  key **and** a one-time code.
+  Fedora/RHEL), enable it in `/etc/pam.d/sshd`, and require both factors with
+  `AuthenticationMethods publickey,keyboard-interactive:pam` in your
+  `10-hardening.conf`. This forces an SSH key **and** a one-time code.
+  **Important:** Step 5 set `KbdInteractiveAuthentication no`; for TOTP you must
+  change it to `yes` in the drop-in, or the code prompt cannot appear. Run the
+  authenticator setup once per user to enroll, validate with `sudo sshd -t`, and
+  test in a second terminal.
 - **Hardware FIDO2 keys:** `ssh-keygen -t ed25519-sk` creates a key bound to a
   security token; the private key cannot leave the hardware and a physical touch
   is required. This is a strong, low-friction second factor. It needs OpenSSH
@@ -654,10 +777,11 @@ update-crypto-policies --show
 
 ## CIS and NIST alignment
 
-The settings above map to the CIS Benchmark for OpenSSH server and to NIST
-controls. Exact CIS control numbers come from the CIS Distribution Independent
-Linux Benchmark; numbering and a few values vary between benchmark versions and
-distributions, so verify against the specific benchmark you must meet.
+The settings above map to the SSH-server section of the CIS Linux benchmarks and
+to NIST controls. Exact CIS control numbers come from the CIS Distribution
+Independent Linux Benchmark; numbering and a few values vary between benchmark
+versions and distributions, so verify against the specific benchmark you must
+meet.
 
 | Setting / action | CIS Benchmark | NIST SP 800-53 Rev 5 / NISTIR 7966 |
 | --- | --- | --- |
