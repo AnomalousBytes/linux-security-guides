@@ -28,7 +28,7 @@ about the boundary:
 - **It does not hide your traffic, your public IP, the sites you visit, TLS SNI,
   or your browser fingerprint.** Routers past the first hop never saw your MAC
   anyway. For traffic privacy use the [WireGuard VPN](wireguard-vpn-self-hosted.md)
-  and [Secure DNS](secure-dns-quad9-dot-dnssec-fedora-44.md) guides.
+  and [Secure DNS](secure-dns-quad9-dot-dnssec.md) guides.
 - **Some of it is already on.** Modern NetworkManager randomizes the MAC used
   while *scanning* by default, and Fedora randomizes the *connection* MAC per
   network by default. Step 1 shows you what your system already does.

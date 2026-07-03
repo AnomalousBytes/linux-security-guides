@@ -42,7 +42,7 @@ before you rely on it:
 - **DNS must go through the tunnel or it leaks.** If your device keeps using the
   local network's resolver, your lookups still reveal every site you visit to that
   network. Step 6 sets an in-tunnel resolver. Pair it with the
-  [Secure DNS guide](secure-dns-quad9-dot-dnssec-fedora-44.md).
+  [Secure DNS guide](secure-dns-quad9-dot-dnssec.md).
 
 In short, a self-hosted WireGuard VPN is excellent for securing access to your own
 systems and for taking your traffic off an untrusted local network. It is not a
@@ -280,7 +280,7 @@ What the notable lines do:
   tunnel, so lookups do not leak to the local network. `wg-quick` applies it using
   a `resolvconf` command; on systems with `systemd-resolved` that integration is
   usually present, otherwise install `openresolv`. Point it at your own resolver
-  and pair with the [Secure DNS guide](secure-dns-quad9-dot-dnssec-fedora-44.md).
+  and pair with the [Secure DNS guide](secure-dns-quad9-dot-dnssec.md).
 - **`PersistentKeepalive = 25`** keeps the tunnel alive through NAT by sending a
   keepalive every 25 seconds. It is WireGuard's recommended value and is needed
   when the client sits behind NAT (most do). Leave it off for a server that only
