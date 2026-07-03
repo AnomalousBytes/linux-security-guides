@@ -26,8 +26,8 @@ Be honest about where a host firewall sits in the stack:
   listens only on `127.0.0.1`, cannot be attacked from the network no matter what
   the firewall says. Auditing what listens (Step 1) and turning off what you do
   not need is the primary control; the firewall is the backstop for what remains.
-  This is NIST CM-7 and it is why Step 1 looks at listening sockets, not just
-  firewall rules.
+  This is NIST CM-7 and it is why Step 1 looks at listening sockets rather than
+  firewall rules alone.
 - **Default-deny inbound is the core firewall posture.** Block everything inbound
   that you did not explicitly allow, and allow outbound. This maps to NIST SC-7
   (boundary protection) and the CIS "Host Based Firewall" section.
@@ -181,7 +181,7 @@ loopback-only and not exposed. An address of `0.0.0.0`, `*`, or `[::]` is bound 
 every interface and *is* reachable from the network if the firewall lets it
 through. For anything in that second group that you do not need reachable, the
 better fix is to stop or reconfigure the service (NIST CM-7, least functionality),
-not just to firewall it. The firewall then covers the services you do want to run
+instead of only firewalling it. The firewall then covers the services you do want to run
 but only expose selectively.
 
 * * *
@@ -555,8 +555,8 @@ against the exact benchmark you must meet:
 - **CIS Red Hat Enterprise Linux 10 Benchmark v1.0.1** (2025-09-30): section 4.1,
   *Configure firewalld*. RHEL 10 covers the firewalld path only.
 - **CIS Ubuntu Linux 24.04 LTS Benchmark**: section 4, *Host Based Firewall*. The
-  numbers below are from **v1.0.0** (2024-08-26). CIS published a restructured
-  **v2.0.0** in 2026 that renumbers this section, so confirm against your version.
+  numbers below are from **v1.0.0** (2024-08-26). CIS has since published a
+  **v2.0.0** (2026), so confirm the numbers against the version you must meet.
 - **Fedora** has no current CIS benchmark (the old Fedora 28 benchmark is
   archived). Adapt the RHEL benchmark or the now-archived CIS Distribution
   Independent Linux Benchmark. **CachyOS and Arch** have no CIS benchmark at all,
