@@ -18,16 +18,16 @@
 
 * * *
 
-## Read this first: most of these are already set
+## Read this first: several of these are already set
 
 On a modern distribution, several of these parameters already hold their hardened
 value out of the box, so this guide is about **verifying what is set and closing
-the specific gaps**, not fixing a wide-open system. On the Fedora 44 test machine,
-`accept_redirects`, `accept_source_route` (IPv4 and IPv6), `icmp_echo_ignore_broadcasts`,
-`icmp_ignore_bogus_error_responses`, and `tcp_syncookies` were already hardened;
-`log_martians` and `secure_redirects` were not, and reverse-path filtering was in
-loose mode. Your distribution and version will differ, which is why Step 1 reads
-the live values before changing anything.
+the specific gaps**, not fixing a wide-open system. On Fedora, `accept_source_route`
+(IPv4 and IPv6), the broadcast- and bogus-ICMP keys, and `tcp_syncookies` are
+already at their hardened values, while `accept_redirects`, `secure_redirects`, and
+`log_martians` are not, and reverse-path filtering is left in loose mode. Your
+distribution, version, and installed packages will differ, which is why Step 1
+reads the live values before changing anything.
 
 Two honest warnings before you start:
 
@@ -128,10 +128,10 @@ net.ipv6.conf.default.accept_source_route = 0
 net.ipv4.conf.all.log_martians = 1
 net.ipv4.conf.default.log_martians = 1
 
-# Ignore ICMP echo to broadcast addresses (Smurf amplification)
+# Ignore ICMP echo/timestamp to broadcast or multicast (Smurf amplification)
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
-# Ignore bogus ICMP error responses
+# Suppress kernel log noise from bogus ICMP error responses
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 
 # SYN cookies: survive a SYN-flood without dropping real connections
@@ -193,26 +193,30 @@ confirm the live values now match your intent.
 
 ## Distribution defaults
 
-The kernel's own defaults are mostly *un*hardened (redirects accepted,
-`log_martians` off), but distributions layer their own `sysctl.d` files on top, so
-the starting point differs:
+The kernel's own defaults are a mixed bag: broadcast and bogus ICMP are already
+ignored and SYN cookies are on, but ICMP redirects are accepted and `log_martians`
+is off. Distributions then layer their own `sysctl.d` files on top, so the exact
+starting point differs:
 
-- **Fedora 44** (verified live) already hardens the redirect-accept, source-route,
-  broadcast-ICMP, bogus-ICMP, and SYN-cookie keys. Its reverse-path filtering comes
-  from systemd's `50-default.conf` in **loose** mode (`default = 2`), and it does
-  **not** ship the RHEL strict override. `log_martians` and `secure_redirects` are
-  the notable gaps.
-- **RHEL** ships `50-redhat.conf`, which sets reverse-path filtering to **strict**
-  (`1`) (confirmed on RHEL 9; RHEL 10 follows the same packaging convention).
-  Otherwise similar to Fedora.
-- **Ubuntu 26.04** enables SYN cookies by default and ships its own network
-  defaults; confirm the rest with the Step 1 loop.
+- **Fedora 44** ships systemd's `50-default.conf`, which sets `accept_source_route`
+  to `0` and reverse-path filtering to **loose** mode (`default = 2`); it does
+  **not** ship the RHEL strict override. With the kernel defaults, that leaves
+  `accept_redirects`, `secure_redirects`, and `log_martians` as the gaps to close,
+  and reverse-path filtering at loose rather than strict.
+- **RHEL** also ships `50-redhat.conf`, which sets reverse-path filtering to
+  **strict** (`1`) (confirmed on RHEL 9; RHEL 10 follows the same packaging
+  convention). Otherwise similar to Fedora.
+- **Ubuntu 26.04** ships the same systemd `50-default.conf` and kernel defaults, so
+  its gaps are the same set; confirm with the Step 1 loop.
 - **CachyOS** (Arch-based) inherits systemd's `50-default.conf` (loose `rp_filter`)
-  and does not add network-hardening defaults of its own, so it benefits most from
-  the full drop-in.
+  and adds no network-hardening defaults of its own, so it benefits most from the
+  full drop-in.
 
-Because defaults move between versions, treat Step 1 as the source of truth for
-your specific machine rather than assuming any of the above.
+Installed packages and a machine's role change this: an IPsec package such as
+`libreswan`, or enabling IP forwarding for containers or a VPN, sets
+`accept_redirects` to `0` on its own, so a given machine may show fewer gaps than a
+clean install. Treat Step 1 as the source of truth for your specific machine
+rather than assuming any of the above.
 
 * * *
 
@@ -228,8 +232,8 @@ so the numbers are given per benchmark:
 - **CIS RHEL 10 v1.0.1** restructured section 3.3 into one recommendation per
   individual key (3.3.1.x for IPv4, 3.3.2.x for IPv6), so a single row below maps
   to several RHEL 10 items.
-- **CIS Ubuntu 24.04 LTS v2.0.0** (2026) renumbers this section; a faithful copy
-  was not available at verification, so confirm against your version.
+- **CIS Ubuntu 24.04 LTS v2.0.0** (2026) supersedes v1.0.0; a faithful copy was
+  not available at verification, so confirm the numbers against your version.
 - **Fedora** and **CachyOS/Arch** have no CIS benchmark; adapt the RHEL benchmark.
 
 | Setting | CIS §3.3 (RHEL 9 v2.0.0 / Ubuntu 24.04 v1.0.0) | NIST SP 800-53 Rev 5 |
@@ -241,7 +245,7 @@ so the numbers are given per benchmark:
 | `accept_redirects = 0` (IPv4 and IPv6) | 3.3.5 | CM-6, SC-7 |
 | `secure_redirects = 0` | 3.3.6 | CM-6, SC-7 |
 | `rp_filter = 1` (or 2) | 3.3.7 | CM-6, SC-7 |
-| `accept_source_route = 0` (IPv4 and IPv6) | 3.3.8 | CM-6, SC-7 |
+| `accept_source_route = 0` (IPv4 and IPv6) | 3.3.8 | CM-6, CM-7, SC-7 |
 | `log_martians = 1` | 3.3.9 | CM-6, AU-12, SI-4 |
 | `tcp_syncookies = 1` | 3.3.10 | CM-6, SC-5 |
 | `accept_ra = 0` (conditional, IPv6) | 3.3.11 | CM-6, SC-7 |
