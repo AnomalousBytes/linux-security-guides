@@ -148,9 +148,10 @@ nmcli connection modify "<connection-name>" ipv6.dhcp-send-hostname no
 nmcli connection up "<connection-name>"
 ```
 
-On NetworkManager 1.52 and newer (Fedora 44 and Ubuntu 26.04 both qualify) these two
-per-family settings are consolidated behind `dhcp-send-hostname-v2`, but setting the
-pair above is safe on every version and has the same effect.
+On NetworkManager 1.52 and newer (Fedora 44 and Ubuntu 26.04 both qualify) each
+per-family `dhcp-send-hostname` became a three-state setting (`default`/`no`/`yes`);
+the `nmcli` commands above set them directly and are authoritative, so they behave
+the same on older and newer versions.
 
 * * *
 
@@ -169,8 +170,9 @@ Type=wlan
 MACAddressPolicy=random
 ```
 
-`MACAddressPolicy=random` is not the default, so you set it explicitly (`persistent`
-keeps a stable generated address; `none` keeps the hardware MAC). Or in Netplan
+`MACAddressPolicy=random` is not the default, so you set it explicitly. On typical
+hardware the default (`persistent`) and `none` both keep the real hardware MAC; only
+`random` hides it, generating a new address each time the device appears. Or in Netplan
 (`/etc/netplan/*.yaml`):
 
 ```yaml
@@ -184,12 +186,19 @@ network:
         "your-ssid": {password: "your-password"}
 ```
 
+> On the default `networkd` renderer, Netplan's `macaddress: random` is unreliable
+> for interfaces matched by name (a documented udev interaction), so the `.link`
+> method above is the dependable way to randomize the MAC on a headless host; use
+> Netplan mainly for the IPv6 privacy setting.
+
 **Turn on IPv6 privacy and DHCP anonymity** in the `systemd-networkd` `.network`
-file:
+file. Match the **same interface** you randomized, because `Anonymize=true` sets the
+DHCP client identifier to that interface's MAC and so should be used only where the
+MAC is randomized (otherwise it broadcasts the real hardware address):
 
 ```ini
 [Match]
-Name=eth0
+Name=wlan0
 
 [Network]
 DHCP=yes
@@ -199,13 +208,18 @@ IPv6PrivacyExtensions=yes
 Anonymize=true
 ```
 
-`IPv6PrivacyExtensions=yes` enables temporary addresses; `Anonymize=true` turns on
-the RFC 7844 anonymity profile, which suppresses the hostname, sets the client
-identifier to the MAC, and drops the vendor-class option in one switch. In Netplan,
-`ipv6-privacy: true` on an interface enables the address rotation.
+`IPv6PrivacyExtensions=yes` enables IPv6 temporary addresses; `Anonymize=true` turns
+on the RFC 7844 anonymity profile, which suppresses the hostname, sets the client
+identifier to the (randomized) MAC, and drops the vendor-class option in one switch.
+In Netplan, `ipv6-privacy: true` on an interface enables the address rotation.
 
-Apply Netplan changes with `sudo netplan apply`, or `systemd-networkd` changes with
-`sudo systemctl restart systemd-networkd`.
+Apply each change by its type. A `.network` change takes effect with
+`sudo systemctl restart systemd-networkd`, and a Netplan change with
+`sudo netplan apply`. A `.link` file is processed by `udev`, not `networkd`, so
+reapply it with `sudo udevadm control --reload`, bring the interface down
+(`sudo ip link set <iface> down`), then
+`sudo udevadm trigger --settle --action=add /sys/class/net/<iface>`, or simply
+reboot.
 
 * * *
 
@@ -221,8 +235,8 @@ ip link show wlp2s0 | awk '/link\/ether/ {print $2}'
 ip -6 addr show dev wlp2s0 | grep -i temporary
 ```
 
-A `temporary` (or `mngtmpaddr`) IPv6 address confirms privacy extensions are
-active. A MAC that differs from the permanent one confirms randomization.
+A `temporary` IPv6 address confirms privacy extensions are active. A MAC that differs
+from the permanent one confirms randomization.
 
 * * *
 
@@ -237,9 +251,11 @@ active. A MAC that differs from the permanent one confirms randomization.
 - **The MAC never changes.** Some Wi-Fi drivers or firmware do not support
   randomization and silently ignore it. It is a hardware and driver limitation, not
   a configuration error.
-- **The hostname is still sent.** On NetworkManager 1.52 and newer, confirm
-  `dhcp-send-hostname-v2` is not overriding your per-family settings, or set it to
-  `no`.
+- **The hostname is still sent.** Confirm both `ipv4.dhcp-send-hostname` and
+  `ipv6.dhcp-send-hostname` read `no` on the active connection and that you
+  reactivated it. On NetworkManager 1.52 and newer these `nmcli` properties are the
+  authoritative values; there is no separate `dhcp-send-hostname-v2` to set from
+  `nmcli`.
 
 * * *
 
