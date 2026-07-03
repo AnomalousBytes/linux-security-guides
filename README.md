@@ -17,6 +17,10 @@ not just what to type.
 - [Secure DNS with Quad9, DNS-over-TLS & DNSSEC on Ubuntu 26.04 LTS](guides/secure-dns-quad9-dot-dnssec-ubuntu-26.04.md)
 - [Secure DNS with Quad9, DNS-over-TLS & DNSSEC on CachyOS](guides/secure-dns-quad9-dot-dnssec-cachyos.md)
 - [Secure and harden SSH with fail2ban, CIS/NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/secure-ssh-with-fail2ban.md)
+- [Host firewall hardening with firewalld, ufw & nftables, CIS/NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/host-firewall-hardening.md)
+- [Kernel network hardening with sysctl, CIS/NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/kernel-network-hardening-sysctl.md)
+- [Wi-Fi & on-the-move privacy: MAC randomization and IPv6 privacy (Fedora, RHEL, Ubuntu, CachyOS)](guides/wifi-privacy-mac-randomization.md)
+- [Self-hosted WireGuard VPN, NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/wireguard-vpn-self-hosted.md)
 
 ### Topics (concepts & governance)
 
@@ -29,7 +33,6 @@ These topics are intended for this repository but are **not written yet**. They
 are listed so the direction is clear, not as available content.
 
 **Security & hardening**
-- Networking privacy & hardening
 - CIS Benchmarks with OpenSCAP
 - System configuration best practices
 
