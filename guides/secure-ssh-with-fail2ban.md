@@ -434,9 +434,9 @@ leave the defaults alone; on Fedora and RHEL, set the system crypto policy below
 touch FIPS only if a regulation requires it. The full approach by distribution:
 
 **Fedora and RHEL: use system-wide crypto policies, not `sshd_config`.** On these
-systems the policy reaches `sshd` through a drop-in that `sshd_config` includes
-(`50-redhat.conf` on RHEL, `40-redhat-crypto-policies.conf` on Fedora 44), and
-`sshd` keeps the first value it reads. `Ciphers`/`MACs`/`KexAlgorithms` lines in
+systems the policy reaches `sshd` through a Red Hat drop-in that `sshd_config`
+includes (`40-redhat-crypto-policies.conf` on Fedora and RHEL 10,
+`50-redhat.conf` on RHEL 9), and `sshd` keeps the first value it reads. `Ciphers`/`MACs`/`KexAlgorithms` lines in
 the main `sshd_config` body are therefore **ignored** (the policy include is
 read first), while the same lines in a lower-numbered drop-in such as
 `10-hardening.conf` would silently **override** the policy. Keep algorithm lines
@@ -501,13 +501,28 @@ sudo semanage port -a -t ssh_port_t -p tcp 2222
 If `semanage` is missing: `sudo dnf install policycoreutils-python-utils`.
 Ubuntu and CachyOS do not need this.
 
-**3. Set the port in your drop-in and validate.** The first command appends a
-`Port 2222` line to your hardening file (`tee -a` means "append"); you could
-instead open the file in `nano` and add the line by hand.
+**3. Set the new port.** Where the port is set depends on whether the daemon or
+the socket owns it.
+
+On **Fedora, RHEL, and CachyOS** the daemon binds the port, so add `Port 2222` to
+your hardening drop-in and validate:
 
 ```bash
 echo 'Port 2222' | sudo tee -a /etc/ssh/sshd_config.d/10-hardening.conf
 sudo sshd -t
+```
+
+On **Ubuntu** the socket binds the port, so a `Port` line in `sshd_config` is
+ignored. Set the port on `ssh.socket` with a drop-in instead; the empty
+`ListenStream=` clears the inherited port 22, and the next line sets 2222:
+
+```bash
+sudo mkdir -p /etc/systemd/system/ssh.socket.d
+sudo tee /etc/systemd/system/ssh.socket.d/listen.conf >/dev/null <<'EOF'
+[Socket]
+ListenStream=
+ListenStream=2222
+EOF
 ```
 
 **4. Apply the port change:**
@@ -516,7 +531,7 @@ sudo sshd -t
 # Fedora, RHEL, and CachyOS
 sudo systemctl restart sshd
 
-# Ubuntu (the socket owns the listening port)
+# Ubuntu (reload units so the socket drop-in is read, then restart the socket)
 sudo systemctl daemon-reload
 sudo systemctl restart ssh.socket
 ```
@@ -745,8 +760,8 @@ overlay reduces the problem fail2ban solves rather than complementing it.
 
 **Honest caveats.** An overlay adds a control plane you must trust and keep
 available: Tailscale's coordination server (or a self-hosted Headscale), or
-Defined Networking's service and your Nebula CA private key, become part of your
-trust boundary. It does **not** replace host hardening: an authorized or
+Defined Networking's service (which holds and rotates the Nebula CA key for you),
+become part of your trust boundary. It does **not** replace host hardening: an authorized or
 compromised overlay peer can still reach `sshd`, so keep the key-only auth and
 the hardening from Steps 3 to 6. And Tailscale SSH is not the same as OpenSSH: it
 authenticates by node identity rather than SSH keys, claims port 22 on the
@@ -855,9 +870,11 @@ which it places out of scope.
   That is expected: the crypto-policy include is read first and `sshd` keeps the
   first value. Use `update-crypto-policies` (Step 6); do not move the lines into
   a low-numbered drop-in, which would override the policy instead.
-- **Port change on Ubuntu does not take effect.** You restarted `ssh.service`
-  instead of `ssh.socket`. Run
-  `sudo systemctl daemon-reload && sudo systemctl restart ssh.socket`.
+- **Port change on Ubuntu does not take effect.** Under socket activation the
+  `Port` directive in `sshd_config` is ignored; the port is set on `ssh.socket`.
+  Add the socket drop-in from Step 7 (`ListenStream=` empty, then
+  `ListenStream=<port>`), then `sudo systemctl daemon-reload && sudo systemctl
+  restart ssh.socket`.
 - **`sshd` will not start on a new port (Fedora/RHEL).** SELinux is blocking the
   bind. Add the label: `sudo semanage port -a -t ssh_port_t -p tcp <port>`.
 
@@ -876,13 +893,14 @@ sudo systemctl disable --now fail2ban
 ```
 
 > **If you changed the SSH port (Step 7), reverting needs care to avoid a
-> lockout.** Removing the drop-in restores `Port 22` in the config, but a running
-> daemon keeps listening on the old port until it is fully restarted, not just
-> reloaded. Do it in this order:
+> lockout.** A running listener keeps the old port until it is fully restarted
+> rather than reloaded. Do it in this order:
 >
-> 1. Remove the drop-in, then **restart** (not reload) so `sshd` rebinds to 22:
->    `sudo sshd -t && sudo systemctl restart sshd` (on Ubuntu:
->    `sudo systemctl daemon-reload && sudo systemctl restart ssh.socket`).
+> 1. Remove the port setting and **restart** (not reload) so the listener rebinds
+>    to 22. On Fedora, RHEL, and CachyOS, delete the `Port 2222` line from the
+>    drop-in, then `sudo sshd -t && sudo systemctl restart sshd`. On Ubuntu, remove
+>    the socket drop-in: `sudo rm /etc/systemd/system/ssh.socket.d/listen.conf &&
+>    sudo systemctl daemon-reload && sudo systemctl restart ssh.socket`.
 > 2. Re-open port 22 in the firewall and confirm a login on 22 works.
 > 3. Only then remove the custom-port firewall rule and, on Fedora/RHEL, the
 >    SELinux label: `sudo semanage port -d -t ssh_port_t -p tcp <port>`.
