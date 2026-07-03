@@ -16,10 +16,12 @@ This guide sets up **Quad9** as your system resolver on CachyOS using
 `systemd-resolved` and NetworkManager, with **DNS-over-TLS** and **DNSSEC**
 turned on.
 
-> **Note:** CachyOS is Arch-based, so unlike Fedora or Ubuntu it does not assume
-> `systemd-resolved` is already running. CachyOS does configure NetworkManager to
-> use it (see Step 1), but this guide makes sure the service is active first. The
-> configuration steps are otherwise the same as on any `systemd-resolved` system
+> **Note:** CachyOS is Arch-based, but current installs ship like Fedora and
+> Ubuntu in this respect: `systemd-resolved` is enabled and NetworkManager is
+> configured to use it (a change from late 2024). Installs older than that did
+> not enable the service, so Step 1 confirms it is active before anything else.
+> The configuration steps are otherwise the same as on any `systemd-resolved`
+> system
 > (the [Fedora 44](secure-dns-quad9-dot-dnssec-fedora-44.md) and
 > [Ubuntu 26.04](secure-dns-quad9-dot-dnssec-ubuntu-26.04.md) guides are close
 > siblings).
@@ -62,8 +64,9 @@ record was not forged, and Quad9 filters known threats.
 
 ## Step 1: Make sure systemd-resolved is the active resolver
 
-CachyOS ships NetworkManager configured to hand DNS to `systemd-resolved`, but on
-an Arch-based system it is worth confirming the service is actually running.
+Current CachyOS installs enable `systemd-resolved` and configure NetworkManager
+to hand DNS to it. Older installs (before late 2024) did not enable the service,
+so confirm it is actually running.
 
 Check whether it is active:
 
@@ -149,14 +152,15 @@ Why each line is written this way:
   certificate is only checked against the server's IP address and SNI is
   disabled, a weaker authentication guarantee. `dns.quad9.net` is the official
   TLS authentication name for this Quad9 service.
-- **`FallbackDNS=`** is intentionally **empty**. `systemd-resolved` ships with
-  compiled-in public fallback resolvers (for example Quad9, Cloudflare, and
-  Google) that it queries **in plaintext**, but only when *no* `DNS=` or per-link
-  servers are known. Emptying it guarantees those can never be used, even if your
-  `DNS=` line somehow fails to load, so the system can never silently leak
-  lookups to a third party in cleartext. (This is not a runtime failover: if
-  Quad9 itself is unreachable, lookups simply fail rather than falling back,
-  which is the correct posture for a hardening guide.)
+- **`FallbackDNS=`** is intentionally **empty**. On Arch-based systems
+  `systemd-resolved` compiles in public fallback resolvers (Quad9, Cloudflare,
+  and Google) that are consulted only when *no* `DNS=` or per-link servers are
+  known. Those entries carry DoT hostnames and follow your `DNSOverTLS=`
+  setting, so they would not be plaintext; emptying the list is still worth it
+  because it guarantees a resolver you did not choose can never be consulted,
+  even if your `DNS=` line somehow fails to load. (This is not a runtime
+  failover: if Quad9 itself is unreachable, lookups simply fail rather than
+  falling back, which is the correct posture for a hardening guide.)
 - **`DNSOverTLS=yes`** is *strict* mode: lookups are encrypted or they fail.
   The alternative, `opportunistic`, silently falls back to plaintext and is
   vulnerable to a trivial downgrade attack, so it is **not** used here.
@@ -178,14 +182,18 @@ sudo systemctl restart systemd-resolved
 
 ## Step 4: Stop your router's DHCP DNS from being used too
 
-This step is easy to miss and is what makes the setup actually private.
+This step is easy to miss, and it is what keeps every lookup on the resolver
+you chose.
 
 `systemd-resolved` queries the global `DNS=` servers **in parallel with the
 per-link DNS servers of your default-route connection**, which a normal
 Wi-Fi/Ethernet connection picked up from DHCP is. NetworkManager pushes those
 per-link (router) servers into `systemd-resolved` over its D-Bus API, so if you
-skip this step some lookups can still be sent **in plaintext to your router**,
-bypassing Quad9 and DoT entirely.
+skip this step some lookups can still be sent **to your router** instead of
+Quad9. The global `DNSOverTLS=yes` from Step 3 does still apply to per-link
+servers, so those lookups are not plaintext, but they target a server you did
+not choose, with no hostname for certificate validation, and they bypass
+Quad9's filtering.
 
 Tell NetworkManager to ignore the DNS servers advertised by DHCP so that only
 your Quad9-over-DoT configuration is used. **Use one of the methods below.**
@@ -199,8 +207,16 @@ nmcli connection show
 sudo nmcli connection modify "<name>" \
   ipv4.ignore-auto-dns yes \
   ipv6.ignore-auto-dns yes
-sudo nmcli connection up "<name>"
+nmcli connection up "<name>"
 ```
+
+> Run the `connection up` command **without** `sudo`. On desktop Wi-Fi the
+> password is often stored in your user's wallet (KWallet on the default KDE
+> desktop), which root cannot read, so `sudo nmcli connection up` fails with
+> *"Secrets were required, but not provided"*. Running it as your own user lets
+> the desktop agent supply the password; alternatives are `--ask` or toggling
+> the connection off and on in the network applet. The `modify` command is
+> saved either way, so any reconnect applies it.
 
 With the global `DNS=` set in Step 3, this is enough: the link now provides no
 DNS servers of its own, so all queries fall through to your Quad9 DoT
@@ -218,7 +234,7 @@ sudo nmcli connection modify "<name>" \
   ipv6.dns "2620:fe::fe#dns.quad9.net,2620:fe::9#dns.quad9.net" \
   ipv4.ignore-auto-dns yes ipv6.ignore-auto-dns yes \
   connection.dns-over-tls yes
-sudo nmcli connection up "<name>"
+nmcli connection up "<name>"
 ```
 
 **Option C, KDE Plasma GUI:**
@@ -245,20 +261,27 @@ manually. Repeat on the **IPv6** tab, then apply and reconnect.
 resolvectl status
 ```
 
-In the **Global** section (and on your active **Link**) you should see something
-like:
+In the **Global** section you should see something like:
 
 ```
-       Protocols: +DefaultRoute +LLMNR -mDNS +DNSOverTLS DNSSEC=yes/supported
+         Protocols: LLMNR=resolve -mDNS +DNSOverTLS DNSSEC=yes/unsupported
+  resolv.conf mode: stub
 Current DNS Server: 9.9.9.9#dns.quad9.net
-       DNS Servers: 9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net 2620:fe::fe#dns.quad9.net 2620:fe::9#dns.quad9.net
+       DNS Servers: 9.9.9.9#dns.quad9.net 149.112.112.112#dns.quad9.net
+                    2620:fe::fe#dns.quad9.net 2620:fe::9#dns.quad9.net
 ```
 
-On `systemd` 259 the DNSSEC status is **folded into the `Protocols` line** as
-`DNSSEC=yes/supported`, with no separate `DNSSEC setting:` line. The exact layout
-can vary between `systemd` versions; the parts that matter are `+DNSOverTLS`,
-`DNSSEC=yes/supported`, and that the Quad9 servers (with the `#dns.quad9.net`
-suffix) are the ones in use.
+The DNSSEC status sits **inside the `Protocols` line** (there is no separate
+`DNSSEC setting:` line), and only the part **before** its slash is your
+setting: `DNSSEC=yes/...` confirms strict validation is on. The part after the
+slash is `systemd-resolved`'s probe of what the current server supports, and
+under strict DNS-over-TLS it often reads `unsupported` even while validation
+works, so do not chase it; Step 7 is the authoritative test. The exact layout
+and the LLMNR token vary between `systemd` versions and distributions. The
+parts that matter are `+DNSOverTLS`, `DNSSEC=yes/...`, and that the Quad9
+servers (with the `#dns.quad9.net` suffix) are the ones in use. After Step 4
+(Option A) your active **Link** lists no DNS servers of its own, so queries use
+the Global ones; that is the intended state.
 
 * * *
 
@@ -269,6 +292,8 @@ These checks use `tcpdump` (install it first if needed, see Prerequisites). Each
 terminals**: one capturing, one generating a lookup. The commands capture on all
 interfaces (`-i any`); if you prefer to watch a single interface, find it with
 `ip -br link` (which lists all interfaces) and replace `-i any` with `-i <iface>`.
+A warning that the `any` device does not support promiscuous mode is normal and
+harmless.
 
 **Negative check.** No plaintext DNS should leave your machine to an *external*
 server on port 53. Loopback traffic to the local stub (`127.0.0.53` /
@@ -413,7 +438,7 @@ sudo systemctl restart systemd-resolved
 # If you changed a NetworkManager connection in Step 4 (Option A or B):
 sudo nmcli connection modify "<name>" ipv4.ignore-auto-dns no ipv6.ignore-auto-dns no \
   ipv4.dns "" ipv6.dns "" connection.dns-over-tls default
-sudo nmcli connection up "<name>"
+nmcli connection up "<name>"
 ```
 
 If you used the **KDE GUI** (Option C), open the connection editor again, set the
@@ -429,7 +454,8 @@ then apply and reconnect.
 - Lookups are **encrypted and authenticated** with DNS-over-TLS (strict),
   validated against the `dns.quad9.net` certificate.
 - Responses are **DNSSEC-validated**, so forged records are rejected.
-- Your **router's plaintext DHCP DNS is suppressed**, so lookups are not leaked.
+- Your **router's DHCP-advertised DNS is suppressed**, so every lookup stays on
+  the resolver you chose.
 - **EDNS Client Subnet (ECS)** is disabled by Quad9 on this service for better
   privacy.
 

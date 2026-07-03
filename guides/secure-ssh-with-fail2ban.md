@@ -1,10 +1,11 @@
 # How to Secure and Harden SSH on Linux, with fail2ban (CIS- and NIST-aligned)
 
-> **Published:** 2026-06-27. Covers Fedora 44, RHEL 10 (and 9), Ubuntu 26.04 LTS
-> (Desktop and Server), and CachyOS. Where a command differs by distribution, the
-> form for each is given. OpenSSH versions at publication: Fedora 44 10.2p1,
-> CachyOS 10.3p1, Ubuntu 26.04 10.2p1, RHEL 10 9.9p1, RHEL 9 8.7p1. fail2ban
-> 1.1.0.
+> **Published:** 2026-06-27. **Last verified:** 2026-07-03, versions and claims
+> re-checked against vendor and standards sources. Covers Fedora 44, RHEL 10
+> (and 9), Ubuntu 26.04 LTS (Desktop and Server), and CachyOS. Where a command
+> differs by distribution, the form for each is given. OpenSSH versions at the
+> last check: Fedora 44 10.2p1, CachyOS 10.3p1, Ubuntu 26.04 10.2p1, RHEL 10
+> 9.9p1, RHEL 9 9.9p1 since RHEL 9.8 (8.7p1 through RHEL 9.7). fail2ban 1.1.0.
 
 > Any machine with SSH exposed to the internet is hit constantly by automated
 > bots trying to guess passwords on port 22. The most effective fixes are to turn
@@ -30,7 +31,8 @@ The order of priority matters, so be honest about what each part buys you:
 
 This guide maps its settings to the SSH-server section of the **CIS Linux
 Benchmarks** (there is no standalone "CIS OpenSSH" benchmark; the SSH controls
-live inside the Distribution Independent Linux and per-distro benchmarks) and to
+live inside the per-distribution Linux benchmarks and the now-archived
+Distribution Independent Linux Benchmark) and to
 **NIST SP 800-53 Rev 5** and **NISTIR 7966**. See
 [CIS and NIST alignment](#cis-and-nist-alignment) for the mapping.
 
@@ -56,21 +58,22 @@ firewalld, SELinux), so they are grouped.
 | Firewall | firewalld (on by default) | ufw (installed, **off** by default) | ufw (**on** by default) |
 | Mandatory access control | SELinux, enforcing | AppArmor (no enforced `sshd` profile) | none by default |
 | Cipher policy | system-wide crypto-policies | OpenSSH defaults | OpenSSH defaults |
-| Install fail2ban | Fedora: `sudo dnf install fail2ban`; RHEL: enable EPEL first (see Step 8) | `sudo apt install fail2ban python3-systemd` | `sudo pacman -S fail2ban` |
+| Install fail2ban | Fedora: `sudo dnf install fail2ban`; RHEL: enable EPEL first (see Step 8) | `sudo apt install fail2ban` | `sudo pacman -S fail2ban` |
 
 A few cross-distro facts worth stating once:
 
 - On **Ubuntu/Debian** the service is `ssh.service`, not `sshd.service` (an
   `sshd` alias exists). On **Fedora/RHEL/CachyOS** it is `sshd.service`.
-- On **Ubuntu**, `sshd` is **socket-activated** (`ssh.socket`): a fresh `sshd`
-  starts for each connection rather than running as a persistent daemon. This
-  changes how reloads and port changes work, noted where it matters. Fedora,
-  RHEL, and CachyOS run a persistent `sshd.service`.
+- On **Ubuntu**, `sshd` is **socket-activated** (`ssh.socket`): systemd owns the
+  listening port and starts `sshd` at the first connection, after which the
+  daemon stays resident. Config reloads work as usual, but a port change must go
+  through `ssh.socket` (see Step 7). Fedora, RHEL, and CachyOS start a
+  persistent `sshd.service` at boot.
 - The OpenSSH client and server are **one package (`openssh`) on Arch/CachyOS**,
   but **split** on Fedora, RHEL, and Ubuntu (`openssh-server`).
 - On **Fedora and RHEL**, SSH ciphers/MACs/key-exchange follow the **system-wide
-  crypto policy**, and values hardcoded in `sshd_config` are ignored. See
-  [Step 6](#step-6-cryptographic-algorithms).
+  crypto policy**; manage them with `update-crypto-policies`, not `sshd_config`.
+  See [Step 6](#step-6-cryptographic-algorithms).
 
 * * *
 
@@ -135,8 +138,8 @@ SSH is broken. Find yours before you start.
   `/etc/ssh/sshd_config.d/`) read in addition to the main config, so your changes
   stay separate and easy to remove.
 - **socket activation** (Ubuntu) means systemd holds the SSH port open and starts
-  a fresh sshd per connection, so config changes apply on the next login
-  automatically and a port change means restarting `ssh.socket`.
+  sshd at the first connection; the daemon then stays running, so config changes
+  still need a reload, and a port change means restarting `ssh.socket`.
 - **firewall** controls which network ports are reachable. Fedora and RHEL use
   **firewalld**; Ubuntu and CachyOS use **ufw**.
 - **SELinux** (Fedora and RHEL, in "enforcing" mode) is an extra security layer
@@ -325,22 +328,28 @@ What the less obvious lines do, and the caveats:
   required (some single-account VPS), use `prohibit-password` instead, which
   still blocks root password logins.
 - **`AllowGroups ssh-users`** limits SSH to that group only. Confirm Step 4 first.
-- **`MaxAuthTries 4`**, **`LoginGraceTime 60`**, **`MaxStartups 10:30:60`**, and
-  **`MaxSessions 4`** are the CIS values. Raise `MaxSessions` toward 10 if you
-  rely on SSH session multiplexing.
+- **`MaxAuthTries 4`**, **`LoginGraceTime 60`**, and **`MaxStartups 10:30:60`**
+  are the CIS values. **`MaxSessions 4`** follows the archived Distribution
+  Independent benchmark; current per-distribution benchmarks only require 10 or
+  less (10 is also the OpenSSH default), so raise it toward 10 if you rely on
+  SSH session multiplexing.
 - **`ClientAliveInterval 300` / `ClientAliveCountMax 3`** drop unresponsive
   connections after about 15 minutes (300s x 3 = 900s; NIST AC-12, session
   termination).
-  CIS editions disagree on the exact numbers: older editions use a 300-second
-  interval with count 0, while v2.0.0 and later use a 15-**second** interval with
-  count 3. The 300/3 here is an operational middle ground that matches neither
+  CIS editions disagree on the exact numbers: the archived Distribution
+  Independent benchmark uses a 300-second interval with count 0, while current
+  per-distribution benchmarks use a 15-**second** interval with count 3 as their
+  example (their audits accept any pair above zero, "according to site policy").
+  The 300/3 here is an operational middle ground that matches neither
   exactly, so substitute the precise pair your target benchmark requires. These
   probes drop genuinely dead links only; an idle but connected session stays,
   because the client answers the probes automatically.
-- **`DisableForwarding yes`** (a CIS Level 2 recommendation, available since
-  OpenSSH 7.4) turns off SSH forwarding. On OpenSSH **before 10.0** this directive
-  does not fully block X11 and agent forwarding (CVE-2025-32728). RHEL 9 (8.7) is
-  affected; RHEL 10 ships 9.9p1 but carries the backported fix
+- **`DisableForwarding yes`** (a CIS Level 2 recommendation for servers, Level 1
+  for workstations, available since OpenSSH 7.4) turns off SSH forwarding. On
+  OpenSSH **before 10.0** this directive does not fully block X11 and agent
+  forwarding (CVE-2025-32728). RHEL 9 is
+  affected (9.9p1 since RHEL 9.8, where Red Hat has deferred the fix); RHEL 10
+  also ships 9.9p1 but carries the backported fix
   (`openssh-9.9p1-11.el10`), and Fedora, Ubuntu, and CachyOS are all on 10.x. The
   explicit `X11Forwarding no`, `AllowAgentForwarding no`, and `AllowTcpForwarding
   no` lines are included so forwarding is off everywhere regardless. **Comment out the whole forwarding block
@@ -350,11 +359,12 @@ What the less obvious lines do, and the caveats:
   authenticate, which NISTIR 7966 calls for and which supports audit (NIST
   AU-3).
 - **Do not add a custom `Ciphers`, `MACs`, or `KexAlgorithms` list here.** See
-  [Step 6](#step-6-cryptographic-algorithms); on Fedora/RHEL such lines are
-  ignored, and modern OpenSSH defaults are already strong.
-- There is **no `Protocol 2` line**. SSH protocol 1 and its associated
-  configuration options, including `Protocol`, were removed in OpenSSH 7.6
-  (2017).
+  [Step 6](#step-6-cryptographic-algorithms); on Fedora/RHEL a list in this
+  drop-in would silently override the system crypto policy, and modern OpenSSH
+  defaults are already strong.
+- There is **no `Protocol 2` line**. Server-side SSH protocol 1 was removed in
+  OpenSSH 7.4 (2016), and the remaining protocol-1 code and its configuration
+  options, including `Protocol`, were removed in OpenSSH 7.6 (2017).
 
 **Create the warning banner** that `Banner` points to (CIS 5.2.19). The default
 text below is fine for personal use; replace it with your organization's approved
@@ -387,15 +397,16 @@ or your current session.
 **Apply it:**
 
 ```bash
-# Fedora, RHEL, and CachyOS (persistent daemon)
+# Fedora, RHEL, and CachyOS
 sudo systemctl reload sshd
+
+# Ubuntu
+sudo systemctl reload ssh
 ```
 
-On **Ubuntu**, `sshd` is socket-activated and starts fresh for each new
-connection, so once `sudo sshd -t` passes, the new settings apply to the next
-login automatically. If you have disabled socket activation (or are on an older
-release where `ssh.service` is the listener), `sudo systemctl restart ssh` is a
-harmless way to be sure.
+Socket activation on **Ubuntu** does not change this step: systemd starts `sshd`
+at the first connection and the daemon then stays resident, so it does not
+re-read its config until you reload it.
 
 **Test from a second terminal before closing your current session:**
 
@@ -423,16 +434,24 @@ leave the defaults alone; on Fedora and RHEL, set the system crypto policy below
 touch FIPS only if a regulation requires it. The full approach by distribution:
 
 **Fedora and RHEL: use system-wide crypto policies, not `sshd_config`.** On these
-systems `sshd` follows `/etc/crypto-policies`, and `Ciphers`/`MACs`/
-`KexAlgorithms` placed in `sshd_config` are **ignored**. Set a policy instead:
+systems the policy reaches `sshd` through a drop-in that `sshd_config` includes
+(`50-redhat.conf` on RHEL, `40-redhat-crypto-policies.conf` on Fedora 44), and
+`sshd` keeps the first value it reads. `Ciphers`/`MACs`/`KexAlgorithms` lines in
+the main `sshd_config` body are therefore **ignored** (the policy include is
+read first), while the same lines in a lower-numbered drop-in such as
+`10-hardening.conf` would silently **override** the policy. Keep algorithm lines
+out of both and set a policy instead:
 
 ```bash
 sudo update-crypto-policies --set FUTURE   # stricter set; DEFAULT is the baseline
 sudo systemctl restart sshd
 ```
 
-`FUTURE` is a forward-looking, quantum-resistant-leaning policy and can reject
-older clients, so test connectivity. For federal or regulated environments that
+`FUTURE` is a stricter, forward-looking policy (RSA and Diffie-Hellman at 3072
+bits minimum) and can reject older clients, so test connectivity. Post-quantum
+key exchange is not tied to it: since RHEL 10.1 the ML-KEM algorithms are
+enabled in every predefined policy, including `DEFAULT`. For federal or
+regulated environments that
 require FIPS 140-3 validated cryptography (NIST SC-13), enable FIPS mode, which
 constrains SSH (and the rest of the system) to approved algorithms. The method
 depends on the version:
@@ -528,8 +547,8 @@ logon attempts); durable account lockout is better handled by PAM `pam_faillock`
 # Fedora
 sudo dnf install fail2ban
 
-# Ubuntu
-sudo apt install fail2ban python3-systemd
+# Ubuntu (python3-systemd, needed for the systemd backend, comes with it)
+sudo apt install fail2ban
 
 # CachyOS
 sudo pacman -S fail2ban
@@ -591,11 +610,13 @@ sudo systemctl enable --now fail2ban
 sudo fail2ban-client status sshd
 ```
 
-> **Ubuntu note:** the stock filter usually still matches Ubuntu because it also
-> keys on the `sshd` process name, not just the unit. If the jail starts and
-> never records failures even though the log shows failed logins, pin it to the
-> right unit by adding to `[sshd]`:
-> `journalmatch = _SYSTEMD_UNIT=ssh.service + _COMM=sshd`.
+> **Ubuntu note:** Ubuntu's packaged filter already pins the journal match to
+> `ssh.service` and matches both the `sshd` and `sshd-session` process names
+> (OpenSSH 9.8 moved session handling into a separate `sshd-session` binary).
+> If you run the upstream filter instead, or the jail starts and never records
+> failures even though the log shows failed logins, pin it by adding to
+> `[sshd]`:
+> `journalmatch = _SYSTEMD_UNIT=ssh.service + _COMM=sshd + _COMM=sshd-session`.
 
 * * *
 
@@ -779,9 +800,10 @@ update-crypto-policies --show
 
 The settings above map to the SSH-server section of the CIS Linux benchmarks and
 to NIST controls. Exact CIS control numbers come from the CIS Distribution
-Independent Linux Benchmark; numbering and a few values vary between benchmark
-versions and distributions, so verify against the specific benchmark you must
-meet.
+Independent Linux Benchmark v2.0.0, the last distribution-neutral edition, which
+CIS has since archived. The per-distribution benchmarks are the maintained ones,
+and their numbering and a few values differ, so verify against the specific
+benchmark you must meet.
 
 | Setting / action | CIS Benchmark | NIST SP 800-53 Rev 5 / NISTIR 7966 |
 | --- | --- | --- |
@@ -826,10 +848,13 @@ which it places out of scope.
 - **fail2ban banned your own IP.** Unban and add it to `ignoreip`:
   `sudo fail2ban-client set sshd unbanip <your-ip>`.
 - **`fail2ban-client status sshd` reports a missing log file.** The jail is using
-  the file backend on a journal-only system. Confirm `backend = systemd` is set,
-  and on Ubuntu that `python3-systemd` is installed.
-- **Cipher hardening in `sshd_config` seems ignored on Fedora/RHEL.** That is
-  expected. Use `update-crypto-policies` (Step 6), not `sshd_config`.
+  the file backend on a journal-only system. Confirm `backend = systemd` is set
+  and that the `python3-systemd` package is present (Ubuntu installs it with
+  fail2ban).
+- **Cipher hardening in the main `sshd_config` seems ignored on Fedora/RHEL.**
+  That is expected: the crypto-policy include is read first and `sshd` keeps the
+  first value. Use `update-crypto-policies` (Step 6); do not move the lines into
+  a low-numbered drop-in, which would override the policy instead.
 - **Port change on Ubuntu does not take effect.** You restarted `ssh.service`
   instead of `ssh.socket`. Run
   `sudo systemctl daemon-reload && sudo systemctl restart ssh.socket`.
@@ -844,8 +869,7 @@ which it places out of scope.
 # Undo the SSH hardening
 sudo rm /etc/ssh/sshd_config.d/10-hardening.conf
 sudo sshd -t && sudo systemctl reload sshd     # Fedora, RHEL, CachyOS
-# On Ubuntu, removing the drop-in applies on the next login (socket-activated);
-# if needed: sudo systemctl daemon-reload && sudo systemctl restart ssh.socket
+sudo sshd -t && sudo systemctl reload ssh      # Ubuntu
 
 # Stop and disable fail2ban
 sudo systemctl disable --now fail2ban

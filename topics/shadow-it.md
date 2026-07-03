@@ -1,7 +1,7 @@
 ---
 title: "Shadow IT: The Silent Threat Inside Your ISMS"
 description: A concise, practical guide to understanding why Shadow IT undermines ISMS programs and how to manage it through visibility, governance, least privilege, and continuous improvement.
-last_verified: 2026-06-27
+last_verified: 2026-07-03
 ---
 
 # Shadow IT: The Silent Threat Inside Your ISMS

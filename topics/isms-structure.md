@@ -1,7 +1,7 @@
 ---
 title: "A Practical ISMS Documentation Structure for ISO/IEC 27001:2022"
 description: A reference folder structure for an ISO/IEC 27001:2022 Information Security Management System, organised around the four Annex A control themes and the management-system clauses (4-10), with notes on placement and mandatory documented information.
-last_verified: 2026-06-27
+last_verified: 2026-07-03
 ---
 
 # A Practical ISMS Documentation Structure for ISO/IEC 27001:2022
@@ -153,6 +153,12 @@ of confusion:
 - **Workstation/Mobile (24) and BYOD (28)** overlap (both relate to A.8.1 *User
   endpoint devices*); keep them separate only if your BYOD rules differ
   materially from corporate-device rules, otherwise consider consolidating.
+- **Clause 4 context now includes climate change.** Amendment 1:2024 to ISO/IEC
+  27001:2022 added a requirement to clause 4.1 (determine whether climate change
+  is a relevant issue) and a note to 4.2 (interested parties can have
+  climate-related requirements). Record that determination in the
+  `Context_Analysis_4.1_and_4.2` document; the amendment adds no controls and
+  changes no numbering.
 
 ## Mandatory documented information (ISO/IEC 27001:2022)
 
