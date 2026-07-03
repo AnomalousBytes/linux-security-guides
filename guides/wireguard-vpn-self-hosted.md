@@ -2,7 +2,7 @@
 
 > **Published:** 2026-07-03. **Last verified:** 2026-07-03 against the `wg(8)` and
 > `wg-quick(8)` man pages, [wireguard.com](https://www.wireguard.com/), and the
-> official Ubuntu Server documentation. The WireGuard kernel module was confirmed
+> official Ubuntu Server and Red Hat networking documentation. The WireGuard kernel module was confirmed
 > present on a live Fedora Linux 44 system (kernel 7.0.13; the module has shipped
 > in-tree since Linux 5.6, so no DKMS is needed). Covers Fedora 44, RHEL 9 and 10,
 > Ubuntu 26.04 LTS, and CachyOS. A live two-host tunnel bring-up is not part of
@@ -29,8 +29,9 @@ before you rely on it:
 - **It moves trust to your server's host, it does not remove trust.** For a
   full-tunnel setup, the tunnel ends at your server (often a rented VPS), which
   decrypts your traffic and forwards it to the internet. That host, and its
-  provider, can see your decrypted traffic and the real sites you reach. You have
-  moved trust from the local network and your ISP to your VPS provider.
+  provider, can see the destinations you connect to and any traffic that is not
+  itself encrypted (content inside HTTPS stays protected by TLS). You have moved
+  trust from the local network and your ISP to your VPS provider.
 - **It changes your apparent source IP, it is not anonymity.** Your traffic
   appears to come from the server. But this is a single hop with no mixing, so
   anyone who can see both ends (the provider, or a well-resourced observer) can
@@ -131,6 +132,9 @@ value on both ends:
 wg genpsk > presharedkey
 ```
 
+Add it as a `PresharedKey =` line inside the matching `[Peer]` block on each end
+(the server's `[Peer]` for that client, and the client's `[Peer]` for the server).
+
 Keep private keys secret and never reuse one key pair across devices. Treat the
 private key like an SSH private key (NIST SC-12, key management).
 
@@ -199,19 +203,20 @@ sudo sysctl --system
 Add the IPv6 line only if you route IPv6 to clients.
 
 **2. Masquerade the tunnel subnet out of the internet-facing interface**, so
-replies find their way back. Do this in your host firewall rather than in the
-tunnel config, which keeps it persistent and in one place. Use the tool your
-distribution runs (see the [host firewall guide](host-firewall-hardening.md)):
+replies find their way back. Keep this in your host firewall rather than in the
+tunnel config, so it lives in one place. Use the tool your distribution runs (see
+the [host firewall guide](host-firewall-hardening.md)):
 
 ```bash
-# Fedora and RHEL (firewalld): masquerade plus open the port
+# Fedora and RHEL (firewalld): masquerade plus open the port. --permanent persists.
 sudo firewall-cmd --permanent --add-masquerade
 sudo firewall-cmd --permanent --add-port=51820/udp
 sudo firewall-cmd --reload
 ```
 
 On Ubuntu, CachyOS, or a native nftables host, add a NAT chain (replace `eth0`
-with your WAN interface and the subnet with your tunnel's):
+with your WAN interface and the subnet with your tunnel's), then load it **and**
+enable the service so it survives a reboot:
 
 ```
 # /etc/nftables.conf, alongside your filter table
@@ -223,9 +228,24 @@ table inet nat {
 }
 ```
 
-Then `sudo nft -f /etc/nftables.conf`. If you prefer the traditional tool, the
-equivalent verified rule is
-`iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE`.
+```bash
+sudo nft -f /etc/nftables.conf
+sudo systemctl enable --now nftables     # otherwise the rule is lost on reboot
+```
+
+The equivalent traditional rule is
+`iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE`, but a bare
+`iptables` command is not saved across reboots on its own (use the
+`iptables-persistent` package, or prefer firewalld or the nftables file above).
+
+**IPv4 and IPv6.** All three commands masquerade **IPv4 only** (`--add-masquerade`,
+`ip saddr`, and `iptables` are IPv4). A full-tunnel client using
+`AllowedIPs = 0.0.0.0/0, ::/0` therefore routes its IPv6 into an IPv4-only tunnel,
+where it is dropped: that stops IPv6 from leaking around the VPN, but it does not
+carry IPv6 through it. To pass IPv6 as well, give the tunnel an IPv6 range
+(`fd00::/64` on both ends), keep the `net.ipv6.conf.all.forwarding = 1` line above,
+and add IPv6 masquerade (`ip6 saddr fd00::/64 oifname "eth0" masquerade` in
+nftables, or a firewalld rich rule).
 
 * * *
 
@@ -277,10 +297,12 @@ What the notable lines do:
 - **`AllowedIPs = 0.0.0.0/0, ::/0`** captures all IPv4 and IPv6 traffic. A narrower
   value gives a split tunnel. This is the single most important client setting.
 - **`DNS = 10.10.10.1`** points name resolution at a resolver reachable through the
-  tunnel, so lookups do not leak to the local network. `wg-quick` applies it using
-  a `resolvconf` command; on systems with `systemd-resolved` that integration is
-  usually present, otherwise install `openresolv`. Point it at your own resolver
-  and pair with the [Secure DNS guide](secure-dns-quad9-dot-dnssec.md).
+  tunnel, so lookups do not leak to the local network. `wg-quick` applies it with a
+  `resolvconf` command. Fedora, RHEL, and CachyOS usually provide that through
+  `systemd-resolved`; on **Ubuntu** the shim is a separate package, so if
+  `wg-quick up` reports `resolvconf: command not found`, install it with
+  `sudo apt install openresolv` (or `systemd-resolvconf`). Point it at your own
+  resolver and pair with the [Secure DNS guide](secure-dns-quad9-dot-dnssec.md).
 - **`PersistentKeepalive = 25`** keeps the tunnel alive through NAT by sending a
   keepalive every 25 seconds. It is WireGuard's recommended value and is needed
   when the client sits behind NAT (most do). Leave it off for a server that only
@@ -385,9 +407,10 @@ principles (protect the tunnel, control the boundary, manage keys) apply.
   the server. Recheck Step 4: `ip_forward` must be `1` (`sysctl net.ipv4.ip_forward`)
   and masquerade must be active for the tunnel subnet.
 - **DNS does not resolve, or leaks to the local network.** The `DNS=` line needs a
-  `resolvconf` provider. On `systemd-resolved` systems it usually works; otherwise
-  install `openresolv`. Confirm your lookups use the tunnel resolver with the
-  checks in the Secure DNS guide.
+  `resolvconf` provider. It usually works on Fedora/RHEL/CachyOS via
+  `systemd-resolved`; on **Ubuntu** install `openresolv` (or `systemd-resolvconf`)
+  if `wg-quick` reports `resolvconf: command not found`. Confirm your lookups use
+  the tunnel resolver with the checks in the Secure DNS guide.
 - **Tunnel drops when idle.** Add `PersistentKeepalive = 25` on the client (Step 6);
   a NAT device timed out the mapping.
 - **`ifconfig.me` still shows your local IP.** `AllowedIPs` on the client is not
@@ -429,5 +452,6 @@ the masquerade rule from Step 4.
 - [`wg-quick(8)` manual](https://man7.org/linux/man-pages/man8/wg-quick.8.html)
 - [WireGuard whitepaper (Donenfeld, NDSS 2017)](https://www.wireguard.com/papers/wireguard.pdf)
 - [Ubuntu Server: WireGuard VPN](https://ubuntu.com/server/docs/how-to/wireguard-vpn/)
+- [Red Hat: Setting up a WireGuard VPN (RHEL 9 and 10)](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_managing_networking/assembly_setting-up-a-wireguard-vpn_configuring-and-managing-networking)
 - [NIST SP 800-53 Rev 5](https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final)
 - [NIST SP 800-77 Rev 1: Guide to IPsec VPNs](https://csrc.nist.gov/pubs/sp/800/77/r1/final)
