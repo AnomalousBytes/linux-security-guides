@@ -56,8 +56,9 @@ above shows where it is heading.
 
 ## Conventions
 
-- File names use lowercase `kebab-case`; OS-pinned guides include the version
-  (for example, `secure-dns-...-fedora-44.md`, `secure-dns-...-ubuntu-26.04.md`).
+- File names use lowercase `kebab-case`, named by topic (for example,
+  `host-firewall-hardening.md`). Each guide covers all the distributions it
+  supports in a single file, with per-distribution commands where they differ.
 - `guides/` holds hands-on, step-by-step procedures. `topics/` holds conceptual
   and governance writing.
 - Every guide carries a **Last verified** date and the versions it was tested on,
