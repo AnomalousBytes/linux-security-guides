@@ -22,9 +22,9 @@ enablement step differ.
 
 > **Read this if you run RHEL.** On Fedora, Ubuntu, and CachyOS, `systemd-resolved`
 > is the default resolver. On **RHEL it is not**: NetworkManager writes
-> `/etc/resolv.conf` directly, and Red Hat ships `systemd-resolved` as a
-> **Technology Preview**. It is **unsupported on RHEL 9**, and **supported on RHEL
-> 10 except for its local DNSSEC validation**, which stays a preview. The DoT setup
+> `/etc/resolv.conf` directly, and Red Hat classifies `systemd-resolved` as a
+> **Technology Preview** that is **unsupported on RHEL 9**, and on **RHEL 10**
+> supported except for its local DNSSEC validation, which stays a preview. The DoT setup
 > here works on both, and Quad9 validates DNSSEC upstream regardless (so forged
 > records are still rejected end to end), but if you run RHEL under a production
 > support contract, weigh that before enabling it. [Step 1](#step-1-confirm-or-on-rhel-enable-systemd-resolved)
@@ -362,7 +362,10 @@ on port 53 to an external server, confirms DoT is carrying your lookups.
 ## Step 7: Confirm DNSSEC validation
 
 Use the well-known DNSSEC test pair: `sigok` is correctly signed and must resolve;
-`sigfail` is deliberately broken and must be rejected.
+`sigfail` is deliberately broken and must be rejected. The `verteiltesysteme.net`
+names used below are long-standing aliases for the same test, now also served under
+the current canonical names `sigok.ippacket.stream` and `sigfail.ippacket.stream`;
+either form works.
 
 **Authoritative check (version-independent):**
 
@@ -458,11 +461,11 @@ tampering, and pairs well with ECH and (if you need it) a VPN.
 
 ## Optional: VPNs, Tailscale, and Docker
 
-- **Tailscale** installs its own resolver (`100.100.100.100`) and, with MagicDNS
-  *"Override local DNS"* enabled, captures **all** queries ahead of your Quad9
-  config while the VPN is up. If you want Quad9-over-DoT to remain in effect, either
-  disable that override or set Quad9 as the global nameserver in the Tailscale admin
-  DNS settings.
+- **Tailscale** installs its own resolver (`100.100.100.100`) and, with its
+  global-nameserver override enabled (the admin console's *"Override DNS servers"*
+  option), captures **all** queries ahead of your Quad9 config while the VPN is up.
+  If you want Quad9-over-DoT to remain in effect, either disable that override or set
+  Quad9 as the global nameserver in the Tailscale admin DNS settings.
 - **Other VPNs** typically push their own DNS for the duration of the connection;
   that is usually desirable (it keeps lookups inside the tunnel). The
   [WireGuard guide](wireguard-vpn-self-hosted.md) sets an in-tunnel resolver for
@@ -485,9 +488,11 @@ nmcli connection up "<name>"
 
 If you used a **desktop GUI** (Option C), reopen the connection editor, set the
 IPv4 and IPv6 DNS back to *Automatic*, clear any servers you typed, then apply and
-reconnect. On **RHEL**, to fully undo Step 1 remove
-`/etc/NetworkManager/conf.d/10-resolved.conf`, restore `/etc/resolv.conf` to
-NetworkManager's management, and `sudo systemctl disable --now systemd-resolved`.
+reconnect. On **RHEL**, to fully undo Step 1: remove
+`/etc/NetworkManager/conf.d/10-resolved.conf`, delete the stub symlink with
+`sudo rm /etc/resolv.conf` (NetworkManager will not rewrite a symlinked
+`resolv.conf`), `sudo systemctl disable --now systemd-resolved`, then
+`sudo systemctl restart NetworkManager` to regenerate a managed `/etc/resolv.conf`.
 
 * * *
 
