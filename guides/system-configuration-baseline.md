@@ -210,10 +210,12 @@ first makes the scan shorter to read.
 
 Two log layers matter: the systemd journal, and the kernel audit trail.
 
-**Make the journal persistent.** The default keeps logs in RAM unless
-`/var/log/journal/` exists. This matters most on Debian 12/13, which no longer
-install `rsyslog`, so without persistence the system journal does not survive a
-reboot. Ubuntu 24.04 already ships a persistent journal.
+**Make the journal persistent.** `journald` stores logs persistently once
+`/var/log/journal/` exists. Debian 12/13 and Ubuntu 24.04 enable this by default on
+a fresh install, and Debian no longer ships `rsyslog`, so the journal is the
+primary log store. Setting `Storage=persistent` explicitly guarantees persistence
+even on a cloud image or an upgraded system that left the directory out, and is
+what CIS expects.
 
 ```bash
 sudo mkdir -p /etc/systemd/journald.conf.d
