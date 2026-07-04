@@ -14,7 +14,7 @@
 > guide does both, plus CIS- and NIST-aligned `sshd` hardening and fail2ban as
 > defense-in-depth.
 
-The order of priority matters, so be clear about what each part buys you:
+The order of priority matters. Each part buys you something different:
 
 - **Keeping SSH off the public internet is the single most effective control
   for a server.** A port that the public internet cannot reach cannot be
@@ -60,7 +60,7 @@ firewalld, SELinux), so they are grouped.
 | Cipher policy | system-wide crypto-policies | OpenSSH defaults | OpenSSH defaults |
 | Install fail2ban | Fedora: `sudo dnf install fail2ban`; RHEL: enable EPEL first (see Step 8) | `sudo apt install fail2ban` | `sudo pacman -S fail2ban` |
 
-A few cross-distro facts worth stating once:
+A few cross-distro facts up front:
 
 - On **Ubuntu/Debian** the service is `ssh.service`, not `sshd.service` (an
   `sshd` alias exists). On **Fedora/RHEL/CachyOS** it is `sshd.service`.

@@ -40,7 +40,7 @@ about the boundary:
 
 * * *
 
-## The one trade-off that matters: random vs stable
+## The main trade-off: random vs stable
 
 A randomized MAC comes in two useful flavors, and picking the right one avoids most
 of the friction:

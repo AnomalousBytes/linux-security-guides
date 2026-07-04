@@ -20,7 +20,7 @@ using the tool that distribution ships: **firewalld** on Fedora and RHEL, **ufw*
 on Ubuntu and CachyOS, and **nftables** directly for anyone who wants the native
 option. It maps each control to the CIS Linux Benchmarks and to NIST SP 800-53.
 
-Be clear about where a host firewall sits in the stack:
+Where a host firewall sits in the stack:
 
 - **Least functionality comes first.** A service that is not running, or that
   listens only on `127.0.0.1`, cannot be attacked from the network no matter what
@@ -63,7 +63,7 @@ grouped.
 | You manage it with | `firewall-cmd` | `ufw` | `ufw` (or nftables / firewalld) |
 | Follow | [Track A](#track-a-firewalld-fedora-rhel-and-anywhere-firewalld-is-in-use) | [Track B](#track-b-ufw-ubuntu-and-cachyos) (or [C](#track-c-nftables-the-native-option)) | [Track B](#track-b-ufw-ubuntu-and-cachyos) |
 
-A few facts worth stating once:
+A few facts up front:
 
 - **Fedora and RHEL** ship firewalld enabled, but the **default zone differs**.
   Fedora Workstation uses a permissive zone that opens a large port range;
