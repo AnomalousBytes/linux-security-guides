@@ -39,6 +39,12 @@ not just what to type.
 | --- | --- | --- | --- |
 | [WireGuard VPN](guides/wireguard-vpn-self-hosted.md) | Self-hosted WireGuard VPN, full-tunnel or split-tunnel | NIST | Fedora, RHEL, Ubuntu, CachyOS |
 
+#### Web & TLS
+
+| Guide | What it covers | Frameworks | Distros |
+| --- | --- | --- | --- |
+| [nginx reverse proxy on AWS](guides/nginx-reverse-proxy-letsencrypt-aws.md) | TLS-terminating nginx proxy with Let's Encrypt, in front of a private backend across AWS public/private subnets | Mozilla TLS | Ubuntu, Amazon Linux 2023 |
+
 #### Compliance
 
 | Guide | What it covers | Frameworks | Distros |
