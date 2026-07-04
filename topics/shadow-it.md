@@ -12,14 +12,14 @@ Shadow IT often starts with good intentions but can quietly undermine even the m
 
 ## Why it is a problem
 
-Unapproved tools create blind spots in risk management. If a system is not known, it cannot be assessed, and vulnerabilities or compliance gaps can go unnoticed. Sensitive data may also find its way into unmanaged environments, breaking data classification controls and creating compliance risks under standards such as ISO/IEC 27001 or the GDPR.
+Unapproved tools create blind spots in risk management. If a system is not known, it cannot be assessed, and vulnerabilities or compliance gaps can go unnoticed. Sensitive data may also find its way into unmanaged environments, breaking data classification controls and creating compliance risks under a standard like ISO/IEC 27001 or a regulation like the GDPR.
 
 Shadow IT fragments security controls. Tools used outside approved environments often lack proper access management, encryption, and logging, which limits visibility for monitoring and incident response. Over time, it becomes harder to maintain an accurate asset inventory or keep the ISMS scope current.
 
 The risks go beyond the obvious ones, and several are easy to overlook:
 
 - **Data residency and cross-border transfer.** Unsanctioned SaaS may store data in jurisdictions that breach GDPR Chapter V transfer rules, a distinct exposure from general "compliance risk."
-- **OAuth and third-party app grants.** A user who grants OAuth scopes to an external app (or installs a browser extension with broad permissions) creates persistent, token-based access to corporate data that survives password changes and is invisible to network monitoring.
+- **OAuth and third-party app grants.** A user who grants OAuth scopes to an external app (or installs a browser extension with broad permissions) creates persistent, token-based access to corporate data that a password reset does not always revoke and that is invisible to network monitoring.
 - **Orphaned access at offboarding.** IT cannot deprovision accounts it does not know exist, so leavers can retain access to shadow systems long after their last day.
 - **License, cost, and contractual exposure.** Duplicate or unmanaged subscriptions create budget waste and true-up risk, and may commit the organization to terms no one reviewed.
 
@@ -42,7 +42,7 @@ Managing Shadow IT is not a single control; it draws on several Annex A controls
 
 Start with visibility: identify all systems in use and include them in your risk assessments. Establish clear governance and ownership to ensure accountability for every system. Apply the principle of least privilege to limit who can deploy or configure new services, especially in cloud environments. Set practical policies for how new tools can be introduced and approved, supported by awareness and training so employees understand both the process and its purpose.
 
-For discovery, network monitoring alone is no longer enough. It misses cloud-to-cloud OAuth grants and traffic to encrypted SaaS. Combine it with **Cloud Access Security Broker (CASB) / Security Service Edge (SSE)** platforms, SaaS-management tooling, and your identity provider's OAuth app inventory to see what is actually in use.
+For discovery, network monitoring alone is no longer enough. It cannot see inside encrypted SaaS sessions or catch cloud-to-cloud OAuth grants, and it misses any SaaS reached from off the corporate network. Combine it with **Cloud Access Security Broker (CASB) / Security Service Edge (SSE)** platforms, SaaS-management tooling, and your identity provider's OAuth app inventory to see what is actually in use.
 
 Treat Shadow IT as an ongoing risk within your ISMS: track it in your risk register, review it during management meetings, and include it in your continuous improvement cycle.
 
@@ -57,6 +57,7 @@ Make the sanctioned path the easy path. Shadow IT usually appears because the ap
 - Least privilege enforced for cloud subscriptions and deployment roles
 - Standard, fast request and approval path for new tools and vendors
 - Supplier security assessments performed for all external services
+- License, cost, and contract terms reviewed for external subscriptions
 - Continuous discovery in place: network, endpoint, cloud, and OAuth/SaaS app inventory
 - Data residency and cross-border transfer checked for each external service
 - Offboarding process covers shadow accounts and revokes OAuth/app grants
