@@ -20,7 +20,7 @@ using the tool that distribution ships: **firewalld** on Fedora and RHEL, **ufw*
 on Ubuntu and CachyOS, and **nftables** directly for anyone who wants the native
 option. It maps each control to the CIS Linux Benchmarks and to NIST SP 800-53.
 
-Be honest about where a host firewall sits in the stack:
+Be clear about where a host firewall sits in the stack:
 
 - **Least functionality comes first.** A service that is not running, or that
   listens only on `127.0.0.1`, cannot be attacked from the network no matter what

@@ -29,7 +29,7 @@ already at their hardened values, while `accept_redirects`, `secure_redirects`, 
 distribution, version, and installed packages will differ, which is why Step 1
 reads the live values before changing anything.
 
-Two honest warnings before you start:
+Two warnings before you start:
 
 - **`ip_forward` is not always a mistake.** Routers, VPN gateways (including the
   [WireGuard guide](wireguard-vpn-self-hosted.md)), and container or VM hosts

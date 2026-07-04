@@ -5,7 +5,7 @@ security and privacy. The hands-on guides focus on Linux-based systems. The
 governance and standards topics (ISMS, ISO/IEC 27001, Shadow IT) are
 platform-agnostic and apply to any environment.
 
-The aim is to be practical and honest. Every guide is written to be followed end
+The aim is to be practical and realistic. Every guide is written to be followed end
 to end, carries a *last verified* date, and explains the reason behind each step,
 not just what to type.
 

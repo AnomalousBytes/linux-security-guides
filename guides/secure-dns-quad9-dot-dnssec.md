@@ -408,8 +408,8 @@ does not depend on it.
 
 ## Limitations: what this does (and does not) hide
 
-Encrypted DNS is an important layer, but it is **not** full browsing privacy. Be
-honest with yourself about the threat model:
+Encrypted DNS is an important layer, but it is **not** full browsing privacy. Think
+carefully about the threat model:
 
 - **Destination IPs are still visible.** After the lookup, your device connects to
   the site's IP address, which your ISP can see and often map back to a site.

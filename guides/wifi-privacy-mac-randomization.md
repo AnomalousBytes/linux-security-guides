@@ -36,7 +36,7 @@ about the boundary:
   addresses are not covered by the CIS Linux Benchmarks (whose IPv6 items are about
   disabling unused IPv6 and rejecting rogue router advertisements, a different
   concern). This guide is privacy hardening, not benchmark compliance, and it is
-  presented honestly as such.
+  presented as such.
 
 * * *
 

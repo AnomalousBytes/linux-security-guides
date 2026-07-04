@@ -20,7 +20,7 @@
 
 ## What this does, and what it does not do
 
-A self-hosted WireGuard VPN is a strong, simple tool with honest limits. Know them
+A self-hosted WireGuard VPN is a strong, simple tool with real limits. Know them
 before you rely on it:
 
 - **It encrypts and authenticates traffic in transit.** Between your device and

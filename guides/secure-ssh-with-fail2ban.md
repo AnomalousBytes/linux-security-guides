@@ -14,7 +14,7 @@
 > guide does both, plus CIS- and NIST-aligned `sshd` hardening and fail2ban as
 > defense-in-depth.
 
-The order of priority matters, so be honest about what each part buys you:
+The order of priority matters, so be clear about what each part buys you:
 
 - **Keeping SSH off the public internet is the single most effective control
   for a server.** A port that the public internet cannot reach cannot be
@@ -758,7 +758,7 @@ do not publish a management interface to the whole internet.
 In short, fail2ban matters most exactly where Step 9 has not been applied. The
 overlay reduces the problem fail2ban solves rather than complementing it.
 
-**Honest caveats.** An overlay adds a control plane you must trust and keep
+**Known limits.** An overlay adds a control plane you must trust and keep
 available: Tailscale's coordination server (or a self-hosted Headscale), or
 Defined Networking's service (which holds and rotates the Nebula CA key for you),
 become part of your trust boundary. It does **not** replace host hardening: an authorized or
