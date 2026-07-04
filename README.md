@@ -15,48 +15,34 @@ not just what to type.
 
 #### Host hardening
 
-| Guide | What it covers | Frameworks | Distros |
-| --- | --- | --- | --- |
-| [Host firewall](guides/host-firewall-hardening.md) | Default-deny host firewall with firewalld, ufw, or nftables | CIS, NIST | Fedora, RHEL, Ubuntu, CachyOS |
-| [Kernel sysctl](guides/kernel-network-hardening-sysctl.md) | Network-stack kernel parameters: anti-spoofing, redirects, SYN floods | CIS, NIST | Fedora, RHEL, Ubuntu, CachyOS |
+- [Host firewall](guides/host-firewall-hardening.md) - default-deny host firewall with firewalld, ufw, or nftables
+- [Kernel sysctl hardening](guides/kernel-network-hardening-sysctl.md) - network-stack kernel parameters for anti-spoofing, redirects, and SYN-flood defense
 
 #### Remote access
 
-| Guide | What it covers | Frameworks | Distros |
-| --- | --- | --- | --- |
-| [SSH + fail2ban](guides/secure-ssh-with-fail2ban.md) | Key-only SSH, `sshd` hardening, and fail2ban brute-force protection | CIS, NIST | Fedora, RHEL, Ubuntu, CachyOS |
+- [SSH + fail2ban](guides/secure-ssh-with-fail2ban.md) - key-only SSH, `sshd` hardening, and fail2ban brute-force protection
 
 #### Network privacy
 
-| Guide | What it covers | Frameworks | Distros |
-| --- | --- | --- | --- |
-| [Secure DNS](guides/secure-dns-quad9-dot-dnssec.md) | Encrypted DNS with DNS-over-TLS and DNSSEC validation via Quad9 | None | Fedora, RHEL, Ubuntu, CachyOS |
-| [Wi-Fi privacy](guides/wifi-privacy-mac-randomization.md) | MAC randomization and IPv6 privacy to limit device tracking | None | Fedora, RHEL, Ubuntu, CachyOS |
+- [Secure DNS](guides/secure-dns-quad9-dot-dnssec.md) - encrypted DNS with DNS-over-TLS and DNSSEC validation via Quad9
+- [Wi-Fi privacy](guides/wifi-privacy-mac-randomization.md) - MAC randomization and IPv6 privacy to limit device tracking
 
 #### VPN
 
-| Guide | What it covers | Frameworks | Distros |
-| --- | --- | --- | --- |
-| [WireGuard VPN](guides/wireguard-vpn-self-hosted.md) | Self-hosted WireGuard VPN, full-tunnel or split-tunnel | NIST | Fedora, RHEL, Ubuntu, CachyOS |
+- [WireGuard VPN](guides/wireguard-vpn-self-hosted.md) - self-hosted WireGuard VPN, full-tunnel or split-tunnel
 
 #### Web & TLS
 
-| Guide | What it covers | Frameworks | Distros |
-| --- | --- | --- | --- |
-| [nginx reverse proxy on AWS](guides/nginx-reverse-proxy-letsencrypt-aws.md) | TLS-terminating nginx proxy with Let's Encrypt, in front of a private backend across AWS public/private subnets | Mozilla TLS | Ubuntu, Amazon Linux 2023 |
+- [nginx reverse proxy on AWS](guides/nginx-reverse-proxy-letsencrypt-aws.md) - TLS-terminating proxy with Let's Encrypt in front of a private backend across AWS public and private subnets
 
 #### Compliance
 
-| Guide | What it covers | Frameworks | Distros |
-| --- | --- | --- | --- |
-| [CIS with OpenSCAP](guides/cis-hardening-with-openscap.md) | Scan and remediate against the CIS Benchmarks with OpenSCAP | CIS | Fedora, RHEL, Ubuntu |
+- [CIS with OpenSCAP](guides/cis-hardening-with-openscap.md) - scan and remediate against the CIS Benchmarks with OpenSCAP
 
 ### Topics (concepts & governance)
 
-| Topic | What it covers |
-| --- | --- |
-| [Shadow IT](topics/shadow-it.md) | Why unapproved tools undermine an ISMS, and how to manage them, mapped to ISO/IEC 27001:2022 |
-| [ISMS documentation structure](topics/isms-structure.md) | A reference folder layout for an ISO/IEC 27001:2022 ISMS |
+- [Shadow IT](topics/shadow-it.md) - why unapproved tools undermine an ISMS, and how to manage them, mapped to ISO/IEC 27001:2022
+- [ISMS documentation structure](topics/isms-structure.md) - a reference folder layout for an ISO/IEC 27001:2022 ISMS
 
 ## Roadmap (planned)
 
