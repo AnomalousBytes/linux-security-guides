@@ -1,10 +1,7 @@
----
-title: "A Practical ISMS Documentation Structure for ISO/IEC 27001:2022"
-description: A reference folder structure for an ISO/IEC 27001:2022 Information Security Management System, organised around the four Annex A control themes and the management-system clauses (4-10), with notes on placement and mandatory documented information.
-last_verified: 2026-07-03
----
-
 # A Practical ISMS Documentation Structure for ISO/IEC 27001:2022
+
+> **Last verified:** 2026-07-03. Clause and Annex A control references checked
+> against ISO/IEC 27001:2022 and ISO/IEC 27002:2022.
 
 When you build an Information Security Management System (ISMS), one of the first
 practical questions is *"where does every document go?"* A clear, consistent file

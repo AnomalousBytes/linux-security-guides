@@ -1,10 +1,8 @@
----
-title: "Shadow IT: The Silent Threat Inside Your ISMS"
-description: A concise, practical guide to understanding why Shadow IT undermines ISMS programs and how to manage it through visibility, governance, least privilege, and continuous improvement.
-last_verified: 2026-07-03
----
-
 # Shadow IT: The Silent Threat Inside Your ISMS
+
+> **Last verified:** 2026-07-03. The ISO/IEC 27001:2022 Annex A control mappings,
+> the GDPR Chapter V reference, and the CASB and SSE definitions were checked
+> against authoritative sources.
 
 Every organization has it: systems and tools employees use without formal approval. It might be a cloud storage app, a collaboration platform, or a SaaS product someone signed up for just to get the job done. Sometimes it is a developer or IT specialist spinning up a new service or virtual machine in a cloud provider without following the proper approval or configuration process. In other cases, it might be a team adopting an external vendor or SaaS platform that has not gone through the organization's security or supplier assessment process.
 
