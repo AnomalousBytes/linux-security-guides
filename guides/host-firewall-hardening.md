@@ -96,6 +96,26 @@ A few facts up front:
 All three end up as nftables rules in the kernel. Choose the one your
 distribution already uses unless you have a reason not to, and run only that one.
 
+```
+              Network (Wi-Fi, cloud, LAN)
+                     │  inbound packets
+                     ▼
+    ┌──────────────────────────────────┐
+    │  host firewall                   │ default-deny inbound:
+    │  firewalld / ufw / nftables      │ established,related → accept
+    │  (one manager, nftables backend) │ allowed ports → accept
+    └────────────────┬─────────────────┘ everything else → drop
+                     │  ssh tcp/22, https tcp/443
+                     ▼
+               local services
+
+    loopback   iif "lo"  (127.0.0.0/8, ::1)  → accept
+    outbound   output policy accept  → Network
+```
+
+The same default-deny inbound flow whichever tool you run: only allowed ports
+reach local services; loopback and outbound stay open.
+
 * * *
 
 ## Prerequisites

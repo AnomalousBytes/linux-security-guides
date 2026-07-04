@@ -63,6 +63,32 @@ privacy silver bullet.
 The setup is the same up to Step 3. The difference is the `AllowedIPs` value on
 the client (Step 6) and whether the server does NAT (Step 4).
 
+```
+(a) Remote access = split tunnel: only AllowedIPs enter the tunnel
+
+  ┌────────────┐   AllowedIPs =           ┌────────────┐
+  │ client wg0 │   10.10.10.0/24,         │ server wg0 │
+  │ 10.10.10.2 │   192.168.50.0/24        │ 10.10.10.1 │
+  │            │══ encrypted UDP ════════►│ :51820/udp │
+  └─────┬──────┘                          └────────────┘
+        │ everything else: direct on the normal link
+        ▼
+     internet  (local Wi-Fi / ISP sees it as usual)
+
+(b) Full tunnel: AllowedIPs = 0.0.0.0/0, ::/0 sends all traffic
+
+  ┌────────────┐   AllowedIPs =           ┌────────────┐
+  │ client wg0 │   0.0.0.0/0, ::/0        │ server wg0 │
+  │ 10.10.10.2 │   all IPv4 + IPv6        │ 10.10.10.1 │
+  │ all traffic│══ encrypted UDP ════════►│ :51820/udp │──► internet
+  └────────────┘                          └────────────┘
+  server: NAT/masquerade + net.ipv4.ip_forward=1 (Step 4)
+  local Wi-Fi / ISP sees only encrypted UDP to :51820
+```
+
+The client's `AllowedIPs` decides what enters the tunnel; everything through
+Step 3 is identical.
+
 * * *
 
 ## Distribution cheat-sheet

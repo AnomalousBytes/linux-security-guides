@@ -45,6 +45,30 @@ These three technologies solve **different** problems and are complementary. Tur
 Used together: DoT hides and protects the lookup in transit, DNSSEC proves the
 record was not forged, and Quad9 filters known threats.
 
+```
+          application (browser, mail client, ...)
+                              │  loopback only, plaintext port 53
+                              ▼
+      ┌──────────────────────────────────────────────┐
+      │  systemd-resolved stub   127.0.0.53:53       │
+      │  strict local DNSSEC validation (DNSSEC=yes) │
+      └───────────────────────┬──────────────────────┘
+                              ║  DNS-over-TLS strict, port 853
+                              ║  SNI / cert name dns.quad9.net
+      ════════════ your machine ends here ════════════
+      ISP / LAN sees only TLS to a Quad9 IP on 853, not
+      the domain names; no plaintext port 53 on the wire
+                              ▼
+      ┌──────────────────────────────────────────────┐
+      │  Quad9   9.9.9.9    149.112.112.112          │
+      │          2620:fe::fe    2620:fe::9           │
+      │  upstream DNSSEC validation                  │
+      └──────────────────────────────────────────────┘
+```
+
+Plaintext DNS stays on loopback (`127.0.0.53`); on the wire it is DNS-over-TLS to
+Quad9 on 853.
+
 * * *
 
 ## Distribution cheat-sheet

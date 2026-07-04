@@ -29,6 +29,26 @@ The order of priority matters. Each part buys you something different:
 - **A non-standard port is obscurity, not security.** It reduces automated scan
   noise but stops no determined attacker. It is optional and covered last.
 
+```
+ SSH client ═══ encrypted SSH, tcp/22 ═══► firewalld / ufw ◄──┐
+ (your laptop)                             allow ssh (22)     │
+                                          ▼                   │
+                           sshd (ssh on Ubuntu):              │
+                           PasswordAuthentication no          │
+                           AllowGroups ssh-users              │
+                           PermitRootLogin no                 │
+                                          │ failed logins     │
+                                          ▼                   │
+                           systemd journal (LogLevel VERBOSE) │
+                                          ▼                   │
+                           fail2ban [sshd], backend=systemd ──┘
+                           4 fails / 10m ── ban 1h
+                           via firewallcmd-rich-rules (firewalld) / ufw
+```
+
+sshd refuses passwords, failed attempts land in the journal, and fail2ban bans the
+source IP back through the firewall.
+
 This guide maps its settings to the SSH-server section of the **CIS Linux
 Benchmarks** (there is no standalone "CIS OpenSSH" benchmark; the SSH controls
 live inside the per-distribution Linux benchmarks and the now-archived
