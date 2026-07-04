@@ -13,36 +13,38 @@ not just what to type.
 
 ### Guides (hands-on, step-by-step)
 
-#### Host hardening
+#### 1. Host hardening
 
-- [Host firewall](guides/host-firewall-hardening.md) - default-deny host firewall with firewalld, ufw, or nftables
-- [Kernel sysctl hardening](guides/kernel-network-hardening-sysctl.md) - network-stack kernel parameters for anti-spoofing, redirects, and SYN-flood defense
+- 1.1 [Host firewall](guides/host-firewall-hardening.md) - default-deny host firewall with firewalld, ufw, or nftables
+- 1.2 [Kernel sysctl hardening](guides/kernel-network-hardening-sysctl.md) - network-stack kernel parameters for anti-spoofing, redirects, and SYN-flood defense
 
-#### Remote access
+#### 2. Remote access
 
-- [SSH + fail2ban](guides/secure-ssh-with-fail2ban.md) - key-only SSH, `sshd` hardening, and fail2ban brute-force protection
+- 2.1 [SSH + fail2ban](guides/secure-ssh-with-fail2ban.md) - key-only SSH, `sshd` hardening, and fail2ban brute-force protection
 
-#### Network privacy
+#### 3. Network privacy
 
-- [Secure DNS](guides/secure-dns-quad9-dot-dnssec.md) - encrypted DNS with DNS-over-TLS and DNSSEC validation via Quad9
-- [Wi-Fi privacy](guides/wifi-privacy-mac-randomization.md) - MAC randomization and IPv6 privacy to limit device tracking
+- 3.1 [Secure DNS](guides/secure-dns-quad9-dot-dnssec.md) - encrypted DNS with DNS-over-TLS and DNSSEC validation via Quad9
+- 3.2 [Wi-Fi privacy](guides/wifi-privacy-mac-randomization.md) - MAC randomization and IPv6 privacy to limit device tracking
 
-#### VPN
+#### 4. VPN
 
-- [WireGuard VPN](guides/wireguard-vpn-self-hosted.md) - self-hosted WireGuard VPN, full-tunnel or split-tunnel
+- 4.1 [WireGuard VPN](guides/wireguard-vpn-self-hosted.md) - self-hosted WireGuard VPN, full-tunnel or split-tunnel
 
-#### Web & TLS
+#### 5. Web & TLS
 
-- [nginx reverse proxy on AWS](guides/nginx-reverse-proxy-letsencrypt-aws.md) - TLS-terminating proxy with Let's Encrypt in front of a private backend across AWS public and private subnets
+- 5.1 [nginx reverse proxy on AWS](guides/nginx-reverse-proxy-letsencrypt-aws.md) - TLS-terminating proxy with Let's Encrypt in front of a private backend across AWS public and private subnets
 
-#### Compliance
+#### 6. Compliance
 
-- [CIS with OpenSCAP](guides/cis-hardening-with-openscap.md) - scan and remediate against the CIS Benchmarks with OpenSCAP
+- 6.1 [CIS with OpenSCAP](guides/cis-hardening-with-openscap.md) - scan and remediate against the CIS Benchmarks with OpenSCAP
 
 ### Topics (concepts & governance)
 
-- [Shadow IT](topics/shadow-it.md) - why unapproved tools undermine an ISMS, and how to manage them, mapped to ISO/IEC 27001:2022
-- [ISMS documentation structure](topics/isms-structure.md) - a reference folder layout for an ISO/IEC 27001:2022 ISMS
+#### 7. Governance & ISMS
+
+- 7.1 [Shadow IT](topics/shadow-it.md) - why unapproved tools undermine an ISMS, and how to manage them, mapped to ISO/IEC 27001:2022
+- 7.2 [ISMS documentation structure](topics/isms-structure.md) - a reference folder layout for an ISO/IEC 27001:2022 ISMS
 
 ## Roadmap (planned)
 
