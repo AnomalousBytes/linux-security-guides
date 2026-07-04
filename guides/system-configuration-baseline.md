@@ -4,9 +4,9 @@
 > Ubuntu, and Red Hat documentation; ComplianceAsCode content v0.1.81; the CIS
 > Benchmark listings for Debian, Ubuntu, and RHEL; and, for the control mappings,
 > NIST SP 800-53 Rev 5 and ISO/IEC 27001:2022. Covers Debian 12 and 13, Ubuntu
-> Server 24.04 LTS, and RHEL 9 and 10. Commands assume `root` or `sudo`. All four
-> families are systemd-based, so `hostnamectl`, `timedatectl`, `localectl`, and
-> `systemctl` behave the same except where noted.
+> Server 24.04 LTS, and RHEL 9 and 10. Commands assume `root` or `sudo`. All are
+> systemd-based, so `hostnamectl`, `timedatectl`, `localectl`, and `systemctl`
+> behave the same except where noted.
 
 > A server baseline is the small set of configuration every server should have
 > before it runs anything, and before you measure it against a benchmark. This
@@ -30,10 +30,10 @@ What sits outside that automation, and therefore belongs here, is three things:
 - **Foundation a CIS scan assumes or will not create for you:** the hostname, time
   synchronization, the administrative account, trusted repositories, and automatic
   security updates.
-- **Build-time decisions CIS flags but cannot remediate:** disk partitioning and
-  mount options, and the bootloader password. The
-  [CIS with OpenSCAP](cis-hardening-with-openscap.md) guide notes these cannot be
-  scripted, so they are decided here.
+- **Build-time decisions CIS flags but cannot remediate:** disk partitioning (the
+  separate-mount rules such as `partition_for_tmp`) and the bootloader password.
+  The [CIS with OpenSCAP](cis-hardening-with-openscap.md) guide notes these have no
+  automated fix, so they are decided here.
 - **The framework story:** when to choose CIS Level 1 versus Level 2, and how the
   baseline maps to NIST and ISO controls for an auditor.
 
@@ -41,8 +41,8 @@ What sits outside that automation, and therefore belongs here, is three things:
 
 ```
   1. Foundation (this guide)
-     identity, time, admin user, automatic updates, logging + audit,
-     mandatory access control, packages, filesystem, bootloader
+     identity, time, admin user, automatic updates, packages,
+     logging + audit, mandatory access control, filesystem, bootloader
         │
         ▼
   2. Focused hardening (the linked guides)
@@ -122,8 +122,8 @@ sudo systemctl enable --now chronyd
 chronyc sources -v
 ```
 
-Run only one implementation. Installing `chrony` on Debian or Ubuntu disables
-`systemd-timesyncd` automatically.
+Run only one implementation. Installing `chrony` on Debian or Ubuntu removes the
+`systemd-timesyncd` package automatically.
 
 ## Step 3: Administrative account and sudo
 
@@ -144,11 +144,11 @@ sudo usermod -aG wheel alice
 Confirm with `id alice` and `sudo -lU alice`. Disabling direct root login over SSH
 is part of the [SSH + fail2ban](secure-ssh-with-fail2ban.md) guide; do that once
 this account works. Password quality and lockout policy (PAM `pwquality` and
-`faillock`) are enforced by the CIS profile in Step 8.
+`faillock`) are enforced by the CIS profile in Step 10.
 
 ## Step 4: Automatic security updates
 
-Unpatched packages are the most common way a server is compromised, so apply
+Unpatched packages are one of the most common ways a server is compromised, so apply
 security updates without waiting for a human. The tool differs by family.
 
 **Debian 12/13 and Ubuntu 24.04** use `unattended-upgrades`. Ubuntu Server enables
@@ -160,8 +160,8 @@ sudo dpkg-reconfigure -plow unattended-upgrades
 ```
 
 The default in `/etc/apt/apt.conf.d/50unattended-upgrades` installs the `-security`
-origin only; the general `-updates` line is commented out. `20auto-upgrades` turns
-the timers on. Dry-run with `sudo unattended-upgrade --dry-run -d`.
+origin only; the general `-updates` line is commented out. `20auto-upgrades` enables
+the daily unattended run. Dry-run with `sudo unattended-upgrade --dry-run -d`.
 
 **RHEL 9/10** use `dnf-automatic` (not installed by default):
 
@@ -183,8 +183,8 @@ sudo systemctl enable --now dnf-automatic.timer
 ```
 
 Enable only `dnf-automatic.timer`. The alternative preset timers
-(`dnf-automatic-install.timer` and friends) ignore `automatic.conf` and change the
-behavior. On CentOS Stream, note that `upgrade_type = security` matches nothing,
+(`dnf-automatic-install.timer` and friends) override `automatic.conf`'s download
+and apply behavior with fixed presets. On CentOS Stream, note that `upgrade_type = security` matches nothing,
 because Stream ships no security errata metadata.
 
 ## Step 5: Minimize installed software and services
@@ -203,7 +203,7 @@ sudo apt purge <pkg> && sudo apt autoremove --purge
 sudo dnf remove <pkg> && sudo dnf autoremove
 ```
 
-The CIS profile in Step 8 flags many of these by name; removing the obvious ones
+The CIS profile in Step 10 flags many of these by name; removing the obvious ones
 first makes the scan shorter to read.
 
 ## Step 6: Persistent logging and auditing
@@ -212,8 +212,8 @@ Two log layers matter: the systemd journal, and the kernel audit trail.
 
 **Make the journal persistent.** The default keeps logs in RAM unless
 `/var/log/journal/` exists. This matters most on Debian 12/13, which no longer
-install `rsyslog`, so without persistence there are no durable logs at all. Ubuntu
-24.04 already ships a persistent journal.
+install `rsyslog`, so without persistence the system journal does not survive a
+reboot. Ubuntu 24.04 already ships a persistent journal.
 
 ```bash
 sudo mkdir -p /etc/systemd/journald.conf.d
@@ -261,8 +261,8 @@ rather than turning the whole system off. The reverse-proxy SELinux example in t
 
 ## Step 8: Filesystem layout and bootloader password
 
-These two are build-time decisions. OpenSCAP will report them as failures but
-cannot fix them, so handle them here.
+These two are build-time decisions. OpenSCAP reports them as failures but cannot
+create the partitions or set the password for you, so handle them here.
 
 - **Separate mounts with restrictive options.** CIS expects `/tmp`, `/var`,
   `/var/log`, `/var/tmp`, `/home`, and `/dev/shm` on their own mounts carrying
@@ -320,9 +320,9 @@ The content available differs by distribution, so the hand-off is not identical:
 | Debian 12 | Upstream release zip (`ssg-debian12-ds.xml`), profiles `cis_level1_server` / `cis_level2_server` | Same flow, swap the data stream file |
 | Debian 13 | **No CIS profile shipped yet** (v0.1.81 carries ANSSI only) | See below |
 
-For **Debian 12**, `openscap-scanner` is in apt and the upstream content zip that
-the OpenSCAP guide already downloads contains `ssg-debian12-ds.xml`, so the flow is
-identical with the file name swapped. One caveat to state to a client: that content
+For **Debian 12**, `openscap-scanner` is in apt and the same upstream content zip
+used in the OpenSCAP guide's Ubuntu path contains `ssg-debian12-ds.xml`, so the flow
+is identical with the file name swapped. One caveat to state to a client: that content
 tracks the CIS Debian 12 Benchmark **v1.1.0**, while CIS has since published
 **v2.0.0**, so a scan aligns to the older recommendation set.
 
@@ -373,7 +373,7 @@ A baseline is only true on the day you set it. Keep it true:
 - The focused guides applied for firewall, SSH, kernel, and DNS, with no step
   duplicated between documents.
 - Broad hardening measured and remediated against a CIS Benchmark through OpenSCAP,
-  at the level the environment needs, with the Debian caveats stated honestly.
+  at the level the environment needs, with the Debian caveats stated.
 - Every step mapped to CIS, NIST SP 800-53, and ISO/IEC 27001, so one effort
   satisfies engineering and audit.
 
