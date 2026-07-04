@@ -31,10 +31,12 @@ live on a working checkout; the PDFs are excluded by `.gitignore`.
 ## Which guides use them
 
 - **CIS Benchmarks** back the [CIS with OpenSCAP](../guides/cis-hardening-with-openscap.md),
+  [server baseline](../guides/system-configuration-baseline.md),
   [host firewall](../guides/host-firewall-hardening.md),
   [kernel sysctl](../guides/kernel-network-hardening-sysctl.md), and
   [SSH + fail2ban](../guides/secure-ssh-with-fail2ban.md) guides.
-- **NIST SP 800-53 Rev 5** informs the [host firewall](../guides/host-firewall-hardening.md),
+- **NIST SP 800-53 Rev 5** informs the [server baseline](../guides/system-configuration-baseline.md),
+  [host firewall](../guides/host-firewall-hardening.md),
   [kernel sysctl](../guides/kernel-network-hardening-sysctl.md),
   [SSH + fail2ban](../guides/secure-ssh-with-fail2ban.md), and
   [WireGuard VPN](../guides/wireguard-vpn-self-hosted.md) guides.
@@ -43,4 +45,5 @@ live on a working checkout; the PDFs are excluded by `.gitignore`.
   guide (see its Framework alignment section).
 - **ISO/IEC 27001:2022** underpins the governance topics
   ([Shadow IT](../topics/shadow-it.md),
-  [ISMS documentation structure](../topics/isms-structure.md)).
+  [ISMS documentation structure](../topics/isms-structure.md)) and the Annex A
+  mapping in the [server baseline](../guides/system-configuration-baseline.md) guide.

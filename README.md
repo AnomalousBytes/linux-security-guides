@@ -16,9 +16,23 @@ type.
 
 <table>
 <tr>
+<td valign="top">
+
+`1.1` **[Server baseline configuration](guides/system-configuration-baseline.md)**
+
+Foundational server setup (identity, time, admin user, automatic updates, logging and audit, mandatory access control), sequenced with the other guides and mapped to CIS, NIST, and ISO 27001
+
+`Debian` `Ubuntu` `RHEL` · `CIS` `NIST` `ISO 27001`
+
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
 <td valign="top" width="50%">
 
-`1.1` **[Host firewall](guides/host-firewall-hardening.md)**
+`1.2` **[Host firewall](guides/host-firewall-hardening.md)**
 
 Default-deny host firewall with firewalld, ufw, or nftables
 
@@ -27,7 +41,7 @@ Default-deny host firewall with firewalld, ufw, or nftables
 </td>
 <td valign="top" width="50%">
 
-`1.2` **[Kernel sysctl hardening](guides/kernel-network-hardening-sysctl.md)**
+`1.3` **[Kernel sysctl hardening](guides/kernel-network-hardening-sysctl.md)**
 
 Network-stack kernel parameters for anti-spoofing, redirects, and SYN-flood defense
 
@@ -162,9 +176,6 @@ The guides are written against published security frameworks and standards. See
 
 These topics are intended for this repository but are **not written yet**. They
 are listed so the direction is clear, not as available content.
-
-**Security & hardening**
-- System configuration best practices
 
 **Broader security & governance**
 - Infrastructure as Code (IaC) and automation
