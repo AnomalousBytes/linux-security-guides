@@ -36,11 +36,15 @@
                   ▼
         ┌─────────────────────┐   private subnet (no route to internet gateway)
         │   backend app (EC2)  │   no public IP, reachable only from the proxy
-        │   listens on :8080   │   outbound updates via NAT gateway
+        │   listens on :8080   │   outbound only, via the NAT gateway
         └─────────────────────┘
 ```
 
-Three ideas shape the design:
+One way in, one way out: inbound traffic reaches the private subnet only through
+the proxy, and the backend reaches the internet only outbound through the NAT
+gateway.
+
+These ideas shape the design:
 
 - **The subnet type is defined by routing.** A public subnet is one whose route
   table has a route to an internet gateway. A private subnet has no such route,
@@ -53,6 +57,11 @@ Three ideas shape the design:
 - **nginx is the single audited entry point.** It is the only host with a public
   address, the only place TLS is terminated, and the only place you manage
   certificates and security headers.
+- **Traffic enters at one point and leaves at one point.** The proxy is the single
+  ingress point, the only inbound path from the internet through the internet
+  gateway. The NAT gateway is the single egress point for the private subnet: the
+  backend reaches out through it for package and security updates, while no
+  connection from the internet can reach the backend.
 
 What this does not do: it is not a web application firewall, it does not patch the
 backend for you, and it does not authenticate users. It reduces the internet-facing
@@ -91,10 +100,12 @@ pieces and the routing that make a subnet public or private are what matter.
   proxy and the NAT gateway here.
 - **Private subnet:** its route table sends `0.0.0.0/0` to the NAT gateway, not to
   the IGW. Put the backend here.
-- **NAT gateway:** create it in the public subnet and give it an Elastic IP. It
-  lets the private backend reach the internet outbound (package updates, and the
-  Route 53 API if you run DNS-01 from the backend) while staying unreachable from
-  it. A NAT gateway is billed per hour and per gigabyte processed. For IPv6-only
+- **NAT gateway:** create it in the public subnet and give it an Elastic IP. It is
+  the private subnet's single egress point: every outbound connection from the
+  backend passes through it (package updates, and the Route 53 API if you run
+  DNS-01 from the backend), and nothing inbound does. The backend keeps no public
+  address and accepts no connection started from the internet. A NAT gateway is
+  billed per hour and per gigabyte processed. For IPv6-only
   outbound, an egress-only internet gateway does the same job without the NAT
   charge; a self-managed NAT instance is the older, cheaper, higher-maintenance
   alternative.
@@ -600,6 +611,16 @@ Two published frameworks are anchored here, each checked against its current tex
   SSRF path to instance credentials.
 - **Encryption in transit (SEC09-BP02).** TLS terminates at the proxy with the
   Mozilla intermediate profile, with the option to re-encrypt to the backend.
+- **Create network layers (SEC05-BP01).** The proxy sits in a public subnet as the
+  internet-facing layer; the backend sits in a private subnet with no route to the
+  internet gateway. This separates components that need inbound access from the
+  internet, such as public web endpoints, from those that need only internal
+  access.
+- **Control traffic flow within your network layers (SEC05-BP02).** Traffic enters
+  only at the proxy and leaves the private subnet only through the NAT gateway, so
+  controls apply to both ingress and egress rather than one direction. Traffic to
+  the backend is limited to the application port sourced from the proxy's security
+  group, a point-to-point flow rather than a broad IP range.
 
 **OWASP Application Security Verification Standard 5.0.0.** The TLS and
 response-header settings in Step 7 implement these requirements:
