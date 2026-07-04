@@ -153,6 +153,11 @@ A reference folder layout for an ISO/IEC 27001:2022 ISMS
 </tr>
 </table>
 
+## Frameworks and standards
+
+The guides are written against published security frameworks and standards. See
+[frameworks/](frameworks/) for the full list and official download links.
+
 ## Roadmap (planned)
 
 These topics are intended for this repository but are **not written yet**. They

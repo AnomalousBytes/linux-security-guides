@@ -11,3 +11,6 @@ claude.md
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Framework reference PDFs (copyrighted or redistribution-restricted, kept local only)
+frameworks/**/*.pdf
