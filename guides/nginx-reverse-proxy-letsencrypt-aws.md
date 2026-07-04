@@ -9,7 +9,7 @@
 > expiration emails, and AWS documentation for VPC, security groups, NAT gateways,
 > Session Manager, and IMDSv2. Package versions checked: Ubuntu Server 24.04 LTS
 > (`nginx` 1.24.0, `certbot` from the EFF snap; the `apt` `certbot` is 2.9.0),
-> Amazon Linux 2023 (`nginx` 1.24.0, `certbot` from a pip virtualenv). Covers
+> Amazon Linux 2023 (`nginx` 1.28.0, `certbot` from a pip virtualenv). Covers
 > Ubuntu Server 24.04 LTS and Amazon Linux 2023.
 
 > A reverse proxy is a server that accepts requests from the internet and forwards
@@ -171,8 +171,11 @@ on the private backend with:
 aws ssm start-session --target i-0123456789abcdef0
 ```
 
-No bastion, no SSH key, no inbound port. Confirm the agent is running on either
-host with `systemctl status amazon-ssm-agent` (Ubuntu: `snap.amazon-ssm-agent…`).
+No bastion, no SSH key, no inbound port. That command runs from your workstation
+and needs the AWS CLI Session Manager plugin installed there, which is a separate
+download from the AWS CLI itself; without it, `start-session` fails with a
+missing-plugin error. Confirm the agent is running on either host with
+`systemctl status amazon-ssm-agent` (Ubuntu: `snap.amazon-ssm-agent…`).
 
 * * *
 
@@ -322,7 +325,8 @@ sudo ln -s /snap/bin/certbot /usr/bin/certbot
 
 **Amazon Linux 2023** has no EPEL support, no `dnf` Certbot package, and no snapd,
 so install Certbot into a Python virtualenv. AL2023's system Python is 3.9, and
-current Certbot needs 3.11 or newer, so build the venv with `python3.11`:
+current Certbot needs Python 3.10 or newer, so build the venv with a newer
+interpreter; `python3.11` is packaged for AL2023:
 
 ```bash
 sudo dnf install -y python3.11 python3.11-pip augeas-libs
@@ -347,9 +351,10 @@ sudo certbot --nginx -d example.com -d www.example.com
 Certbot obtains the certificate, edits the server block to add the `listen 443 ssl`
 configuration and the certificate paths, and offers to add the HTTP→HTTPS
 redirect. HTTP-01 cannot issue wildcards. If you would rather Certbot obtain the
-certificate without rewriting your nginx config, use
-`sudo certbot certonly --nginx -d example.com` and wire up the TLS server block
-yourself from Step 7.
+certificate without making permanent edits to your nginx config, use
+`sudo certbot certonly --nginx -d example.com` (the nginx plugin authenticates
+only, reverting its temporary changes) and wire up the TLS server block yourself
+from Step 7.
 
 ### Path B: DNS-01 via Route 53 (no port 80 needed, supports wildcards)
 
@@ -449,12 +454,12 @@ The choices, and the ones people get wrong in 2026:
 - **No custom `ssl_dhparam`.** The current intermediate cipher list is ECDHE-only;
   Mozilla dropped the DHE ciphers that needed a Diffie-Hellman parameter file, so
   there is none to generate.
-- **`http2 on;` needs nginx 1.25.1 or newer.** Ubuntu 24.04 and AL2023 both ship
-  nginx 1.24.0, where that directive does not exist. On the stock package, use the
-  older form `listen 443 ssl http2;` instead of a separate `http2 on;` line. To use
-  the modern directive (and get a newer nginx generally), add the official
-  [nginx.org repository](https://nginx.org/en/linux_packages.html), whose stable
-  branch is well past 1.25.1.
+- **`http2 on;` needs nginx 1.25.1 or newer, which not every package has.** Amazon
+  Linux 2023 ships nginx 1.28.0, so `http2 on;` works there as written. Ubuntu
+  24.04 LTS is held at nginx 1.24.0, which predates the directive; on stock Ubuntu,
+  use the older form `listen 443 ssl http2;` instead of a separate `http2 on;`
+  line, or add the official [nginx.org repository](https://nginx.org/en/linux_packages.html)
+  (stable branch well past 1.25.1) to get the modern directive and a newer nginx.
 - **HSTS with care.** `max-age=63072000; includeSubDomains` tells browsers to use
   HTTPS only for two years. Add `; preload` and submit to hstspreload.org only once
   every subdomain serves HTTPS, because preload is hard to undo. The header is
@@ -560,8 +565,9 @@ certificates are for the public name on the proxy, not for private backends.
   `aws ssm start-session --target <instance-id>`; if that fails, the instance is
   missing the `AmazonSSMManagedInstanceCore` role or has no network path to the SSM
   endpoints (NAT gateway or VPC endpoints).
-- **`http2 on;` is rejected by nginx -t.** The stock 1.24.0 package predates the
-  directive. Use `listen 443 ssl http2;`, or install nginx from nginx.org.
+- **`http2 on;` is rejected by nginx -t.** Your nginx is older than 1.25.1 (stock
+  Ubuntu 24.04 is 1.24.0). Use `listen 443 ssl http2;`, or install nginx from
+  nginx.org. Amazon Linux 2023 (nginx 1.28.0) accepts `http2 on;` as written.
 
 * * *
 
