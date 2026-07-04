@@ -106,7 +106,8 @@ ISMS Documentation/
 │   │   ├── Risk Assessment Methodology (6.1.2)/
 │   │   ├── Risk Treatment Plan (6.1.3 e)/     # mandatory
 │   │   ├── Statement of Applicability (SOA).xlsx   # mandatory (6.1.3 d)
-│   │   └── Information Security Objectives (6.2)/   # mandatory
+│   │   ├── Information Security Objectives (6.2)/   # mandatory
+│   │   └── Planning of Changes (6.3)/              # new in 2022; no mandatory record
 │   ├── 7. Support/
 │   │   ├── Competence & Training Records (7.2)/    # mandatory
 │   │   ├── Communication Plan (7.4)/
@@ -153,6 +154,11 @@ of confusion:
 - **Workstation/Mobile (24) and BYOD (28)** overlap (both relate to A.8.1 *User
   endpoint devices*); keep them separate only if your BYOD rules differ
   materially from corporate-device rules, otherwise consider consolidating.
+- **Clause 6.3 *Planning of changes* is new in the 2022 revision.** It requires
+  changes to the ISMS to be made in a planned way but mandates no documented
+  information of its own. The `Planning of Changes (6.3)` folder above is a
+  convenience placeholder; the planning is usually evidenced through management
+  review (9.3) and the change management process, so it carries no mandatory record.
 - **Clause 4 context now includes climate change.** Amendment 1:2024 to ISO/IEC
   27001:2022 added a requirement to clause 4.1 (determine whether climate change
   is a relevant issue) and a note to 4.2 (interested parties can have
