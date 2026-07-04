@@ -24,18 +24,23 @@ live on a working checkout; the PDFs are excluded by `.gitignore`.
   Cloud architecture pillars and best practices. Copyright Amazon Web Services;
   read online, not licensed for redistribution.
 - **[ISO/IEC 27001:2022](https://www.iso.org/standard/27001)** -
-  Information security management systems, Requirements (Edition 3). Copyrighted
-  standard, purchase from ISO.
+  Information security, cybersecurity and privacy protection — Information security
+  management systems — Requirements (Edition 3). Copyrighted standard, purchase
+  from ISO.
 
 ## Which guides use them
 
-- **CIS** backs the [CIS with OpenSCAP](../guides/cis-hardening-with-openscap.md),
-  [host firewall](../guides/host-firewall-hardening.md), and
-  [kernel sysctl](../guides/kernel-network-hardening-sysctl.md) guides.
-- **NIST SP 800-53** informs the host hardening and remote access guides.
-- **Mozilla TLS** guidance and the **AWS Well-Architected** security pillar back the
-  [nginx reverse proxy on AWS](../guides/nginx-reverse-proxy-letsencrypt-aws.md)
-  guide.
-- **ISO/IEC 27001** underpins the governance topics
+- **CIS Benchmarks** back the [CIS with OpenSCAP](../guides/cis-hardening-with-openscap.md),
+  [host firewall](../guides/host-firewall-hardening.md),
+  [kernel sysctl](../guides/kernel-network-hardening-sysctl.md), and
+  [SSH + fail2ban](../guides/secure-ssh-with-fail2ban.md) guides.
+- **NIST SP 800-53 Rev 5** informs the [host firewall](../guides/host-firewall-hardening.md),
+  [kernel sysctl](../guides/kernel-network-hardening-sysctl.md),
+  [SSH + fail2ban](../guides/secure-ssh-with-fail2ban.md), and
+  [WireGuard VPN](../guides/wireguard-vpn-self-hosted.md) guides.
+- **Mozilla TLS**, the **AWS Well-Architected** Security pillar, and **OWASP ASVS 5.0.0**
+  back the [nginx reverse proxy on AWS](../guides/nginx-reverse-proxy-letsencrypt-aws.md)
+  guide (see its Framework alignment section).
+- **ISO/IEC 27001:2022** underpins the governance topics
   ([Shadow IT](../topics/shadow-it.md),
   [ISMS documentation structure](../topics/isms-structure.md)).

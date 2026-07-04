@@ -584,6 +584,41 @@ certificates are for the public name on the proxy, not for private backends.
 
 * * *
 
+## Framework alignment
+
+Two published frameworks are anchored here, each checked against its current text.
+
+**AWS Well-Architected Framework, Security pillar:**
+
+- **Least-privilege access (SEC03-BP02).** The backend security group admits only
+  the proxy's security group on the application port, and the DNS-01 Route 53 role
+  is scoped to a single hosted zone.
+- **Apply security at all layers.** Public exposure is one hardened proxy, the
+  backend has no public IP, and administration runs through Session Manager rather
+  than an open SSH port.
+- **Reduce the attack surface on compute.** IMDSv2 is required, which closes the
+  SSRF path to instance credentials.
+- **Encryption in transit (SEC09-BP02).** TLS terminates at the proxy with the
+  Mozilla intermediate profile, with the option to re-encrypt to the backend.
+
+**OWASP Application Security Verification Standard 5.0.0.** The TLS and
+response-header settings in Step 7 implement these requirements:
+
+| This guide sets | ASVS 5.0.0 |
+| --- | --- |
+| HSTS, `max-age` two years with `includeSubDomains` | 3.4.1 |
+| `Content-Security-Policy` with `frame-ancestors 'self'` | 3.4.3, 3.4.6 |
+| `X-Content-Type-Options: nosniff` | 3.4.4 |
+| `Referrer-Policy` | 3.4.5 |
+| TLS 1.2 and 1.3 with recommended cipher suites | 12.1.1, 12.1.2 |
+| Publicly trusted TLS to external clients (Let's Encrypt) | 12.2.1, 12.2.2 |
+
+ASVS 3.4.6 treats `X-Frame-Options` as obsolete and relies on the CSP
+`frame-ancestors` directive, which this guide sets; the `X-Frame-Options` line is
+kept only for older browsers.
+
+* * *
+
 ## References
 
 - [nginx: `ngx_http_proxy_module`](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
@@ -603,3 +638,5 @@ certificates are for the public name on the proxy, not for private backends.
 - [AWS: use IMDSv2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html)
 - [AWS: public IPv4 address charge](https://aws.amazon.com/blogs/aws/new-aws-public-ipv4-address-charge-public-ip-insights/)
 - [MDN: HTTP security headers (HSTS, X-Frame-Options, Referrer-Policy)](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security)
+- [AWS Well-Architected Framework: Security pillar](https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html)
+- [OWASP Application Security Verification Standard (ASVS)](https://owasp.org/www-project-application-security-verification-standard/)

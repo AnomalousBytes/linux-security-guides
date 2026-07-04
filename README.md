@@ -104,7 +104,7 @@ Self-hosted WireGuard VPN, full-tunnel or split-tunnel
 
 TLS-terminating proxy with Let's Encrypt in front of a private backend on AWS
 
-`Ubuntu` `Amazon Linux 2023` · `Mozilla TLS`
+`Ubuntu` `Amazon Linux 2023` · `Mozilla TLS` `AWS Well-Architected` `OWASP ASVS`
 
 </td>
 </tr>
