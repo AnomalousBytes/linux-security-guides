@@ -51,7 +51,7 @@ certificate.
 | Content source | `sudo dnf install scap-security-guide` (carries current 0.1.81) | `sudo dnf install scap-security-guide` (Red Hat-supported content) | Download the upstream release zip (see Step 1) |
 | Data stream | `/usr/share/xml/scap/ssg/content/ssg-fedora-ds.xml` | `/usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml` or `ssg-rhel10-ds.xml` | `scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml` |
 | CIS server profiles | `cis_server_l1`, `cis` (L2, **DRAFT** status) | `cis_server_l1`, `cis` (= Level 2 Server) | `cis_level1_server`, `cis_level2_server` |
-| Aligned benchmark | CIS Fedora 40 Branch Benchmark (draft, best effort) | CIS RHEL 9 Benchmark v2.0.0 / RHEL 10 Benchmark v1.0.1 | CIS Ubuntu Linux 24.04 LTS Benchmark v1.0.0 |
+| Aligned benchmark | CIS Fedora 40 Branch Benchmark (draft, best effort) | CIS RHEL 9 Benchmark v2.0.0 / RHEL 10 Benchmark v1.0.1 | CIS Ubuntu Linux 24.04 LTS Benchmark v1.0.0 (the version the v0.1.81 content targets; CIS has since published v2.0.0) |
 
 Scope limits, stated up front:
 
@@ -238,9 +238,10 @@ your rollback is the snapshot you take now, not a flag later. The sharp edges to
 check for, all confirmed against the v0.1.81 Ubuntu CIS Level 1 Server profile:
 
 - **The firewall can change out from under you.** CIS requires a single firewall
-  utility. The profile's firewall variable defaults to **nftables**, and the
-  generated fix for `package_ufw_removed` runs `apt-get remove -y ufw` when the
-  variable is not set to ufw. If your ruleset lives in ufw (as on a stock
+  utility. The CIS profile sets its firewall variable
+  (`var_network_filtering_service`) to **nftables**, and the generated fix for
+  `package_ufw_removed` runs `apt-get remove -y ufw` when the variable is not set
+  to ufw. If your ruleset lives in ufw (as on a stock
   hardened Ubuntu or the [host firewall guide](host-firewall-hardening.md) Track
   B), either re-express it in nftables first or skip those rules.
 - **SSH root login goes away and weak crypto is disabled.**
