@@ -19,6 +19,7 @@ not just what to type.
 - [Kernel network hardening with sysctl, CIS/NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/kernel-network-hardening-sysctl.md)
 - [Wi-Fi & on-the-move privacy: MAC randomization and IPv6 privacy (Fedora, RHEL, Ubuntu, CachyOS)](guides/wifi-privacy-mac-randomization.md)
 - [Self-hosted WireGuard VPN, NIST-aligned (Fedora, RHEL, Ubuntu, CachyOS)](guides/wireguard-vpn-self-hosted.md)
+- [Scan and harden against CIS Benchmarks with OpenSCAP (Fedora, RHEL, Ubuntu)](guides/cis-hardening-with-openscap.md)
 
 ### Topics (concepts & governance)
 
@@ -31,7 +32,6 @@ These topics are intended for this repository but are **not written yet**. They
 are listed so the direction is clear, not as available content.
 
 **Security & hardening**
-- CIS Benchmarks with OpenSCAP
 - System configuration best practices
 
 **Broader security & governance**
