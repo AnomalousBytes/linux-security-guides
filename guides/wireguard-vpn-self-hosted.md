@@ -13,8 +13,8 @@
 > control. People use it two ways: to reach their own devices and home network
 > securely from anywhere, and to route a laptop's entire connection through a
 > server they run so the local network and ISP cannot see it. This guide covers
-> both. Be clear-eyed about the second use: a VPN you host yourself changes *who*
-> can see your traffic. It does not make you anonymous.
+> both. The second use has a limit worth naming: a VPN you host yourself changes
+> *who* can see your traffic. It does not make you anonymous.
 
 * * *
 
@@ -466,7 +466,7 @@ the masquerade rule from Step 4.
   that takes a device's traffic off the local network and presents your server's
   exit IP.
 - **In-tunnel DNS**, so lookups do not leak to the network you are on.
-- A clear-eyed understanding that this protects your traffic in transit and moves
+- A clear understanding that this protects your traffic in transit and moves
   trust to your server's host; it is not anonymity.
 
 * * *

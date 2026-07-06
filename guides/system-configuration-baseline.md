@@ -4,7 +4,10 @@
 > Ubuntu, and Red Hat documentation; ComplianceAsCode content v0.1.81; the CIS
 > Benchmark listings for Debian, Ubuntu, and RHEL; and, for the control mappings,
 > NIST SP 800-53 Rev 5 and ISO/IEC 27001:2022. Covers Debian 12 and 13, Ubuntu
-> Server 24.04 LTS, and RHEL 9 and 10. Commands assume `root` or `sudo`. All are
+> Server 24.04 LTS, and RHEL 9 and 10. Fedora and CachyOS are not baselined here,
+> but their users can apply the same steps (Fedora follows the RHEL/dnf
+> instructions) and then use the focused guides directly. Commands assume `root`
+> or `sudo`. All are
 > systemd-based, so `hostnamectl`, `timedatectl`, `localectl`, and `systemctl`
 > behave the same except where noted.
 
@@ -15,6 +18,13 @@
 > and then hands broad hardening to the CIS Benchmarks through OpenSCAP. Each step
 > is mapped to where CIS, NIST SP 800-53, and ISO/IEC 27001 apply, so the same work
 > serves both engineering and audit.
+
+> **On Ubuntu versions:** this baseline is verified on Ubuntu Server 24.04 LTS, the
+> release with current CIS Benchmark and OpenSCAP content. The focused guides it
+> links to are verified on Ubuntu 26.04 LTS; their steps apply to 24.04 as well.
+> Stay on 24.04 where you need CIS/OpenSCAP compliance evidence today (Step 10),
+> since 26.04 has no matching content yet, a point the
+> [OpenSCAP guide](cis-hardening-with-openscap.md) makes directly.
 
 ## How this guide fits
 
@@ -295,6 +305,13 @@ password required only to edit entries, not to boot unattended.
 
 The rest of the host hardening lives in dedicated guides. Apply the ones that fit
 the server's role:
+
+> **If you run Debian.** The focused guides below are written for Fedora, RHEL,
+> Ubuntu, and CachyOS. Debian 12/13 track Ubuntu's tooling (apt, ufw, `ssh.service`
+> with socket activation, the same `sysctl.d` mechanism), so follow each guide's
+> **Ubuntu** instructions. One exception: for encrypted DNS, Debian does not enable
+> `systemd-resolved` by default, so run the guide's **RHEL** enablement step first,
+> then the shared configuration.
 
 - **[Host firewall](host-firewall-hardening.md)** for a default-deny inbound
   policy with firewalld, ufw, or nftables.

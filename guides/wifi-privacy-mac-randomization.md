@@ -20,8 +20,8 @@
 ## What this protects, and what it does not
 
 This is **link-layer privacy**. It changes what the local network and anyone
-listening nearby can use to fingerprint your device on the first hop. Be clear
-about the boundary:
+listening nearby can use to fingerprint your device on the first hop. Where the
+boundary sits:
 
 - **It hides device identifiers from the local network:** the MAC address, the
   hostname, and (with IPv6 privacy) a long-lived address.
@@ -148,10 +148,13 @@ nmcli connection modify "<connection-name>" ipv6.dhcp-send-hostname no
 nmcli connection up "<connection-name>"
 ```
 
-On NetworkManager 1.52 and newer (Fedora 44 and Ubuntu 26.04 both qualify) each
-per-family `dhcp-send-hostname` became a three-state setting (`default`/`no`/`yes`);
-the `nmcli` commands above set them directly and are authoritative, so they behave
-the same on older and newer versions.
+Since NetworkManager 1.52 the authoritative property is a new per-family
+`dhcp-send-hostname-v2`, a three-state setting (`default`/`no`/`yes`). The older
+`dhcp-send-hostname` boolean set above is deprecated but still honored: when
+`dhcp-send-hostname-v2` is left at its `default`, NetworkManager falls back to the
+boolean. Setting the boolean therefore works on both older and newer versions
+(Fedora 44 and Ubuntu 26.04 both ship 1.52 or newer). On 1.52+ you may instead set
+`ipv4.dhcp-send-hostname-v2` / `ipv6.dhcp-send-hostname-v2` directly.
 
 * * *
 
@@ -253,9 +256,10 @@ from the permanent one confirms randomization.
   a configuration error.
 - **The hostname is still sent.** Confirm both `ipv4.dhcp-send-hostname` and
   `ipv6.dhcp-send-hostname` read `no` on the active connection and that you
-  reactivated it. On NetworkManager 1.52 and newer these `nmcli` properties are the
-  authoritative values; there is no separate `dhcp-send-hostname-v2` to set from
-  `nmcli`.
+  reactivated it. On NetworkManager 1.52 and newer the boolean is a deprecated
+  fallback for the newer `dhcp-send-hostname-v2` property, so also check that
+  `ipv4.dhcp-send-hostname-v2` / `ipv6.dhcp-send-hostname-v2` are `no` or `default`;
+  a `-v2` value of `yes` overrides the boolean and re-enables sending.
 
 * * *
 

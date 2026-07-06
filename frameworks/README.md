@@ -17,15 +17,17 @@ live on a working checkout; the PDFs are excluded by `.gitignore`.
   Application security requirements and verification criteria. Licensed CC BY-SA;
   free to download.
 - **[CIS Ubuntu Linux 24.04 LTS Benchmark](https://www.cisecurity.org/benchmark/ubuntu_linux)** -
-  Consensus hardening baseline (current published version v2.0.0). Free download
-  after registering an email with CIS; redistribution is restricted by the CIS
-  license.
+  Consensus hardening baseline (current published version v2.0.0, released in the CIS
+  June 2026 update). Free download after registering an email with CIS; redistribution
+  is restricted by the CIS license. The local reference copy here is v1.0.0, the
+  version the ComplianceAsCode v0.1.81 content still targets, which is why the OpenSCAP
+  and kernel guides cite v1.0.0 rule numbers.
 - **[AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html)** -
   Cloud architecture pillars and best practices. Copyright Amazon Web Services;
   read online, not licensed for redistribution.
 - **[ISO/IEC 27001:2022](https://www.iso.org/standard/27001)** -
-  Information security, cybersecurity and privacy protection — Information security
-  management systems — Requirements (Edition 3). Copyrighted standard, purchase
+  Information security, cybersecurity and privacy protection - Information security
+  management systems - Requirements (Edition 3). Copyrighted standard, purchase
   from ISO.
 
 ## Which guides use them
