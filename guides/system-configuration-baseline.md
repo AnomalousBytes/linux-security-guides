@@ -307,11 +307,12 @@ The rest of the host hardening lives in dedicated guides. Apply the ones that fi
 the server's role:
 
 > **If you run Debian.** The focused guides below are written for Fedora, RHEL,
-> Ubuntu, and CachyOS. Debian 12/13 track Ubuntu's tooling (apt, ufw, `ssh.service`
-> with socket activation, the same `sysctl.d` mechanism), so follow each guide's
-> **Ubuntu** instructions. One exception: for encrypted DNS, Debian does not enable
-> `systemd-resolved` by default, so run the guide's **RHEL** enablement step first,
-> then the shared configuration.
+> Ubuntu, and CachyOS. Debian 12/13 share Ubuntu's apt packaging, ufw, and the same
+> `sysctl.d` mechanism, so follow each guide's **Ubuntu** commands for those. Two
+> differences to watch: Debian's SSH unit is `ssh.service` but, unlike Ubuntu, it is
+> **not** socket-activated, so a port change goes in `sshd_config` (the Fedora/RHEL
+> path) rather than on `ssh.socket`; and Debian does not enable `systemd-resolved` by
+> default, so for encrypted DNS run the guide's **RHEL** enablement step first.
 
 - **[Host firewall](host-firewall-hardening.md)** for a default-deny inbound
   policy with firewalld, ufw, or nftables.
