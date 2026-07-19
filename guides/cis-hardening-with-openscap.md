@@ -135,7 +135,7 @@ follow the pattern `xccdf_org.ssgproject.content_profile_<name>`:
 | Ubuntu 24.04 | `cis_level2_server` | Level 2 - Server |
 | Ubuntu 24.04 | `cis_level1_workstation` / `cis_level2_workstation` | Workstation levels |
 | RHEL 9 / 10 | `cis_server_l1` | Level 1 - Server |
-| RHEL 9 / 10 | `cis` | Level 2 - Server (the plain `cis` ID is L2 Server) |
+| RHEL 9 / 10 | `cis` | Level 2 - Server (its ID is the bare `cis`) |
 | RHEL 9 / 10 | `cis_workstation_l1` / `cis_workstation_l2` | Workstation levels |
 | Fedora | `cis_server_l1`, `cis`, `cis_workstation_l1`, `cis_workstation_l2` | **DRAFT** profiles |
 
@@ -143,7 +143,7 @@ Which one to pick: **Level 1** is the baseline CIS considers broadly applicable
 with limited breakage risk; **Level 2** adds defense-in-depth for
 higher-security environments and can reduce functionality. Start with Level 1 - Server
 on a server. The Fedora profiles describe themselves as draft, experimental, and
-maintained best-effort against the CIS Fedora 40 Branch Benchmark; they are fine
+maintained best-effort against the CIS Fedora 40 Branch Benchmark. They are fine
 for a personal baseline but do not present a Fedora scan to a client as a CIS
 Benchmark result. The same data streams also carry non-CIS profiles (DISA STIG,
 ANSSI, PCI DSS, depending on product), which is useful when a client's framework
@@ -224,7 +224,7 @@ For the whole-profile variant, swap in
 
 Expect lines reading `FIX FOR THIS RULE '...' IS MISSING!` when you run the
 script. Not every rule has an automated fix: repartitioning (`partition_for_tmp`
-and friends) and the GRUB bootloader password (`grub2_password`) are the classic
+and related rules) and the GRUB bootloader password (`grub2_password`) are the classic
 examples, since no sane script repartitions a live disk or invents a password
 for you. Those rules stay failed until you address them by hand, and on a
 cloud image with a single root volume, the partition rules may be a documented
@@ -271,7 +271,7 @@ Then protect yourself:
 # 2. Keep a root shell open in a second terminal until you are done
 # 3. Apply
 chmod +x cis-remediation.sh
-sudo bash ./cis-remediation.sh |& tee remediation.log
+sudo bash ./cis-remediation.sh 2>&1 | tee remediation.log
 ```
 
 The script must run as root and only on the OS it was generated for; every rule
@@ -291,7 +291,8 @@ that counts is the one from a fresh boot:
 
 ```bash
 sudo reboot
-# after logging back in (with your non-root account):
+# log back in with your non-root account, then return to the extracted directory:
+cd scap-security-guide-0.1.81
 sudo oscap xccdf eval \
   --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
   --results results-after.xml \
