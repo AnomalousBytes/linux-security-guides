@@ -37,8 +37,8 @@ Three pieces work together, and naming them once avoids confusion later:
   correspond to one CIS Benchmark level, for example "Level 1 - Server".
 
 One accuracy point worth getting right in client conversations: these profiles
-are community-maintained content that **aligns to** a specific published CIS
-Benchmark version and carries CIS trademark attribution. The project does not
+are community-maintained content that **aligns to** a specific CIS Benchmark
+version and carries CIS trademark attribution. The project does not
 claim CIS certification, and neither does Red Hat; CIS's own certified assessor
 is CIS-CAT Pro. A clean SSG scan is strong evidence of alignment, not a CIS
 certificate.
@@ -55,9 +55,10 @@ certificate.
 
 Scope limits, stated up front:
 
-- **CachyOS and Arch are not covered.** ComplianceAsCode v0.1.81 ships 38 product
-  data streams and none of them target Arch Linux; the scanner itself is only in
-  the AUR. There is no supported CIS SCAP content to scan against.
+- **CachyOS and Arch are not covered.** ComplianceAsCode v0.1.81 ships SCAP
+  content for dozens of operating systems, but none for Arch Linux; the scanner
+  itself is only in the AUR. There is no supported CIS SCAP content to scan
+  against.
 - **Ubuntu 26.04 LTS has no OS-matched content yet.** No `ubuntu2604` data stream
   exists in v0.1.81 (or anywhere else). The newest Ubuntu content is
   `ubuntu2404`, so this guide scans 24.04. Scanning 26.04 with 24.04 content is
@@ -233,8 +234,9 @@ accepted risk rather than a fix.
 
 Read the generated script before running it. It is plain bash, one commented
 block per rule. There is no automated way back: Red Hat states outright that it
-provides no method to revert security-hardening remediations (KB 7032665), so
-your rollback is the snapshot you take now, not a flag later. The sharp edges to
+provides no automated method to revert security-hardening remediations
+(KB 7032665), so your only rollback is the snapshot you take before you apply.
+The sharp edges to
 check for, all confirmed against the v0.1.81 Ubuntu CIS Level 1 Server profile:
 
 - **The firewall can change out from under you.** CIS requires a single firewall
