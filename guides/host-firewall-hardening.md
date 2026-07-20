@@ -1,8 +1,7 @@
 # How to Configure and Harden a Host Firewall on Linux, with firewalld, ufw, and nftables (CIS- and NIST-aligned)
 
 > **Published:** 2026-07-03. **Last verified:** 2026-07-03. The firewalld
-> sections were verified on a live Fedora Linux 44 (KDE) system running firewalld
-> 2.4.0. The ufw and nftables sections were checked against the `ufw(8)` and
+> sections were verified on a Fedora Linux 44 system running firewalld 2.4.0. The ufw and nftables sections were checked against the `ufw(8)` and
 > `nft(8)` man pages, the netfilter project wiki, and the Ubuntu, Debian, and Arch
 > documentation. Covers Fedora 44, RHEL 9 and 10, Ubuntu 26.04 LTS (Desktop and
 > Server), and CachyOS. Where a command differs by distribution, the form for each
@@ -34,6 +33,13 @@ Where a host firewall sits in the stack:
 - **A host firewall is not a network firewall or an IDS.** It protects the one
   host it runs on. It complements a network firewall and the SSH and DNS
   hardening in the other guides here; it does not replace them.
+- **Container runtimes can bypass it.** If Docker or rootful Podman is installed,
+  publishing a container port (for example `docker run -p 8080:80`) inserts its own
+  rules that steer inbound packets through the kernel's NAT stage before they reach
+  the input chain where ufw and firewalld rules live. The published port is then
+  reachable even though your firewall does not list it. Restrict published ports in
+  the container runtime (bind them to `127.0.0.1`, or use its own network controls),
+  and audit what actually listens with `sudo ss -tulpn` (Step 1).
 - **Run exactly one firewall manager.** firewalld, ufw, and a hand-written
   nftables ruleset all program the same kernel subsystem. Running two at once
   gives you conflicting, hard-to-read rules. Pick one per host.
@@ -73,7 +79,7 @@ A few facts up front:
   Step 2.
 - **CachyOS** ships ufw **active** with a default-deny-inbound policy already set,
   which is unlike vanilla Arch (no firewall at all). On CachyOS you are mostly
-  allowing the services you run and verifying, not starting from scratch.
+  allowing the services you run and verifying what is already in place.
 - **The backend is nftables** on all of these. ufw reaches it through the
   `iptables-nft` compatibility layer; firewalld and native nftables use it
   directly. This is why you do not mix a hand-written nftables ruleset with ufw
@@ -217,16 +223,18 @@ sudo firewall-cmd --add-service=ssh --permanent
 sudo firewall-cmd --reload
 
 # Ubuntu (ufw is inactive) -- add the rule now, enable in Track B
-sudo ufw allow OpenSSH
+sudo ufw limit OpenSSH
 
 # CachyOS (ufw already active)
-sudo ufw allow ssh
+sudo ufw limit ssh
 ```
 
 `OpenSSH` is an application profile ufw ships when `openssh-server` is installed;
-`ssh` is the equivalent service name. Either opens TCP 22. If you run SSH on a
-non-standard port, allow that port number instead (for example
-`sudo ufw allow 2222/tcp`).
+`ssh` is the equivalent service name. Either opens TCP 22. `ufw limit` opens SSH
+and adds a light rate-limit on repeated connection attempts (explained in B2); it
+still lets your own session through, so it is safe to run here. If you run SSH on a
+non-standard port, use that port number instead (for example
+`sudo ufw limit 2222/tcp`).
 
 Now follow the track for your distribution.
 
@@ -290,8 +298,8 @@ sudo firewall-cmd --set-default-zone=public
 ```
 
 `--set-default-zone` applies immediately and persists, no reload needed. After
-this, only `ssh`, `mdns`, and `dhcpv6-client` are allowed inbound and the
-`1025-65535` range is closed. Some desktop sharing features will stop working
+this, only `ssh` and `dhcpv6-client` are allowed inbound and the `1025-65535` range
+is closed. Some desktop sharing features will stop working
 until you allow their specific ports; add them back individually as needed (A4).
 
 **Option 2, keep the zone but remove the open range.** If you rely on the
@@ -306,16 +314,18 @@ sudo firewall-cmd --reload
 ### A3. Understand how unmatched traffic is treated
 
 A firewalld zone with `target: default` **rejects** unsolicited inbound packets
-that match no rule (it replies with an ICMP "prohibited" error), while still
-allowing ICMP itself. That is already a deny-by-default posture. If you would
+that match no rule: it replies with a "prohibited" error using ICMP (the network's
+control-message protocol), while still allowing ICMP itself. That is already a deny-by-default posture. If you would
 rather drop silently, set the target to `DROP`:
 
 ```bash
-sudo firewall-cmd --permanent --zone=public --set-target=DROP
+sudo firewall-cmd --permanent --zone="$(firewall-cmd --get-default-zone)" --set-target=DROP
 sudo firewall-cmd --reload
 ```
 
-`--set-target` is permanent-only, so it needs the `--reload` to take effect.
+This targets whatever zone is currently the default; substitute an explicit zone
+name if you manage a different one. `--set-target` is permanent-only, so it needs
+the `--reload` to take effect.
 Silent drop hides the host from casual scans but also delays legitimate error
 feedback; reject is the friendlier default and both deny inbound.
 
@@ -395,22 +405,21 @@ everything outbound permitted.
 
 ### B2. Allow the services you run
 
-You already allowed SSH in Step 2. Add anything else you expose, and prefer
-`limit` over `allow` for SSH to rate-limit repeated connection attempts:
+You already allowed and rate-limited SSH in Step 2 with `ufw limit`. Add anything
+else you expose:
 
 ```bash
-# Rate-limit SSH: ufw blocks an IP that opens 6 or more connections in 30 seconds
-sudo ufw limit ssh
-
 # Allow other services as needed (examples)
 sudo ufw allow 443/tcp        # HTTPS
 sudo ufw allow from 192.168.1.0/24 to any port 445 proto tcp   # SMB, LAN only
 ```
 
-The `limit` rule is a light brute-force speed bump defined by ufw as: allow the
-connection normally, but deny an address that initiates six or more connections
-within thirty seconds. It is not a substitute for key-only SSH (see the SSH
-guide), but it cuts scanner noise.
+The `limit` rule you used for SSH is a light brute-force speed bump defined by ufw
+as: allow the connection normally, but deny an address that opens six or more
+connections in thirty seconds. It is not a substitute for key-only SSH (see the SSH
+guide), but it cuts scanner noise. Keep a single SSH rule: ufw applies the first
+rule that matches a packet, so a second SSH rule under a different name (an `allow`
+stacked on top of the `limit`, say) can mask the limit.
 
 ### B3. Enable ufw
 
@@ -501,8 +510,8 @@ table inet filter {
 
 Add a line per service you expose, for example `tcp dport 443 accept` for HTTPS.
 On Arch and CachyOS the `nft` binary is at `/usr/bin/nft`, so change the first
-line to `#!/usr/bin/nft -f`; the shebang only matters if you run the file directly
-rather than loading it with `nft -f`.
+line to `#!/usr/bin/nft -f`; the shebang (the `#!` first line) only matters if you
+run the file directly rather than loading it with `nft -f`.
 
 ### C2. Load and persist
 
@@ -574,29 +583,35 @@ against the exact benchmark you must meet:
   *Host Based Firewall*, with subsections for firewalld and nftables.
 - **CIS Red Hat Enterprise Linux 10 Benchmark v1.0.1** (2025-09-30): section 4.1,
   *Configure firewalld*. RHEL 10 covers the firewalld path only.
-- **CIS Ubuntu Linux 24.04 LTS Benchmark**: section 4, *Host Based Firewall*. The
-  numbers below are from **v1.0.0** (2024-08-26). CIS has since published a
-  **v2.0.0** (2026), so confirm the numbers against the version you must meet.
+- **CIS Ubuntu Linux 24.04 LTS Benchmark v2.0.0** (2026-05-28): section 4, *Host
+  Based Firewall*, subsection 4.1, *Configure Uncomplicated Firewall*. v2.0.0
+  restructured this section to the ufw path only, and removed the nftables and
+  iptables subsections and several standalone ufw checks that v1.0.0 had. The
+  numbers below are v2.0.0. If you must meet the older **v1.0.0** (2024-08-26), its
+  numbering differs; the v1.0.0 number is shown in parentheses where it helps.
 - **Fedora** has no current CIS benchmark (the old Fedora 28 benchmark is
   archived). Adapt the RHEL benchmark or the now-archived CIS Distribution
   Independent Linux Benchmark. **CachyOS and Arch** have no CIS benchmark at all,
-  so their coverage here is by analogy, not certification.
+  so their coverage here is by analogy rather than certification.
 
 | Action in this guide | CIS (RHEL firewalld path) | CIS (Ubuntu ufw path) | NIST SP 800-53 Rev 5 |
 | --- | --- | --- | --- |
-| Use exactly one firewall utility | RHEL 9 4.1.2 | Ubuntu 4.1.1 | CM-7 |
-| Firewall service enabled and running | RHEL 10 4.1.3 | Ubuntu 4.2.3 | SC-7 |
-| Default-deny inbound (zone target / default policy) | RHEL 10 4.1.4; zone `target` | Ubuntu 4.2.7 | SC-7, SC-7(12) |
-| Loopback traffic handled correctly | RHEL 9 4.2.2; RHEL 10 4.1.5 | Ubuntu 4.2.4 | SC-7 |
-| Allow only needed services, drop the rest | RHEL 9 4.2.1; RHEL 10 4.1.7 | Ubuntu 4.2.6 | CM-7, CM-7(1) |
-| Consider outbound policy | (site policy) | Ubuntu 4.2.5 | AC-4 |
-| nftables base chains and default-deny policy | RHEL 9 4.3.1, 4.3.3 | Ubuntu 4.3.5, 4.3.8 | SC-7 |
+| Use exactly one firewall utility | RHEL 9 4.1.2 | dropped in v2.0.0 (v1.0.0 4.1.1) | CM-7 |
+| Firewall service enabled and running | RHEL 10 4.1.3 | Ubuntu 4.1.2 (v1.0.0 4.2.3) | SC-7 |
+| Default-deny inbound (zone target / default policy) | RHEL 10 4.1.4; zone `target` | Ubuntu 4.1.3 (v1.0.0 4.2.7) | SC-7, SC-7(5), SC-7(12) |
+| Loopback traffic handled correctly | RHEL 9 4.2.2; RHEL 10 4.1.5 | dropped in v2.0.0 (v1.0.0 4.2.4) | SC-7 |
+| Allow only needed services, drop the rest | RHEL 9 4.2.1; RHEL 10 4.1.7 | dropped in v2.0.0 (v1.0.0 4.2.6) | CM-7, CM-7(1) |
+| Consider outbound policy | (site policy) | Ubuntu 4.1.4 (v1.0.0 4.2.5) | AC-4 |
+| Routed and forwarded default policy | (site policy) | Ubuntu 4.1.5 | SC-7 |
+| nftables base chains and default-deny policy | RHEL 9 4.3.1, 4.3.3 | none in v2.0.0 (v1.0.0 4.3.5, 4.3.8) | SC-7 |
 | Audit listening services (least functionality) | (site policy) | (site policy) | CM-7 |
 
 In NIST terms, SC-7 (Boundary Protection) is the parent control: its definition of
-a "managed interface" explicitly includes firewalls, and enhancement SC-7(12),
-*Host-based Protection*, is the direct hook for a host firewall. CM-7 (Least
-Functionality) is the reason Step 1 audits listening services and the tracks
+a "managed interface" explicitly includes firewalls. Enhancement SC-7(5) is the
+deny-by-default, allow-by-exception posture the whole guide sets up, and SC-7(12),
+*Host-based Protection*, is the direct hook for a firewall that runs on the host it
+protects. CM-7 (Least Functionality) is the reason Step 1 audits listening services
+and the tracks
 remove services you do not use, rather than leaving them running behind a closed
 port.
 
@@ -606,7 +621,7 @@ port.
 
 - **Locked out of a remote host after enabling the firewall.** Use the provider's
   serial or recovery console. On firewalld: `sudo firewall-cmd --add-service=ssh`
-  then `--runtime-to-permanent`. On ufw: `sudo ufw allow OpenSSH`. On nftables:
+  then `--runtime-to-permanent`. On ufw: `sudo ufw limit OpenSSH`. On nftables:
   add `tcp dport 22 accept` to the input chain and reload. This is why Step 2
   comes before any tightening and why you keep a second terminal open.
 - **A firewalld change did not take effect.** A `--permanent` change needs
