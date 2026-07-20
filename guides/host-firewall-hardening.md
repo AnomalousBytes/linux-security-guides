@@ -17,7 +17,10 @@
 This guide sets up a **default-deny inbound** host firewall on each distribution
 using the tool that distribution ships: **firewalld** on Fedora and RHEL, **ufw**
 on Ubuntu and CachyOS, and **nftables** directly for anyone who wants the native
-option. It maps each control to the CIS Linux Benchmarks and to NIST SP 800-53.
+option. The tool-specific steps are split into three **tracks**, one per tool:
+**Track A** (firewalld), **Track B** (ufw), and **Track C** (nftables). You follow
+the single track for your system, and the cheat-sheet below tells you which. The
+guide maps each control to the CIS Linux Benchmarks and to NIST SP 800-53.
 
 Where a host firewall sits in the stack:
 
@@ -33,16 +36,20 @@ Where a host firewall sits in the stack:
 - **A host firewall is not a network firewall or an IDS.** It protects the one
   host it runs on. It complements a network firewall and the SSH and DNS
   hardening in the other guides here; it does not replace them.
-- **Container runtimes can bypass it.** If Docker or rootful Podman is installed,
-  publishing a container port (for example `docker run -p 8080:80`) inserts its own
-  rules that steer inbound packets through the kernel's NAT stage before they reach
-  the input chain where ufw and firewalld rules live. The published port is then
-  reachable even though your firewall does not list it. Restrict published ports in
-  the container runtime (bind them to `127.0.0.1`, or use its own network controls),
-  and audit what actually listens with `sudo ss -tulpn` (Step 1).
-- **Run exactly one firewall manager.** firewalld, ufw, and a hand-written
-  nftables ruleset all program the same kernel subsystem. Running two at once
-  gives you conflicting, hard-to-read rules. Pick one per host.
+- **Container runtimes can open ports around it.** Docker and rootful Podman
+  manage their own firewall rules. When you publish a container's port (for example
+  with `docker run -p 8080:80`), the runtime tells the kernel to send that port's
+  traffic straight to the container, bypassing the firewalld or ufw rules that guard
+  the host. The port is then reachable from the network even though your firewall
+  never listed it. To stay in control, publish container ports only to `127.0.0.1`
+  (for example `-p 127.0.0.1:8080:80`) or restrict them with the runtime's own
+  network settings, and check what is actually reachable with `sudo ss -tulpn`
+  (Step 1).
+- **Run only one firewall manager.** firewalld, ufw, and a hand-written nftables
+  ruleset are three different front-ends that all write their rules into the same
+  place in the kernel. Run two of them and the rules pile up on top of each other,
+  which makes it hard to tell which rule is actually deciding what. Pick one manager
+  per host and use only that one.
 
 > **Lockout warning:** on a remote machine, enabling a default-deny firewall
 > before you allow SSH will cut off your session and leave you unable to
@@ -80,10 +87,12 @@ A few facts up front:
 - **CachyOS** ships ufw **active** with a default-deny-inbound policy already set,
   which is unlike vanilla Arch (no firewall at all). On CachyOS you are mostly
   allowing the services you run and verifying what is already in place.
-- **The backend is nftables** on all of these. ufw reaches it through the
-  `iptables-nft` compatibility layer; firewalld and native nftables use it
-  directly. This is why you do not mix a hand-written nftables ruleset with ufw
-  or firewalld on the same host.
+- **They all share the same nftables backend.** Underneath, all three tools store
+  their rules in the kernel's nftables framework: firewalld and native nftables use
+  it directly, and ufw reaches it through a compatibility layer called
+  `iptables-nft`. Because they share that one backend, a hand-written nftables
+  ruleset and ufw (or firewalld) can quietly overwrite or clash with each other,
+  which is the practical reason to stick to one of them per host.
 
 * * *
 
@@ -298,8 +307,10 @@ sudo firewall-cmd --set-default-zone=public
 ```
 
 `--set-default-zone` applies immediately and persists, no reload needed. After
-this, only `ssh` and `dhcpv6-client` are allowed inbound and the `1025-65535` range
-is closed. Some desktop sharing features will stop working
+this, the `1025-65535` range is closed and the host keeps only the short list of
+services the `public` zone allows: `ssh` and `dhcpv6-client`, plus `mdns` on
+Fedora. Confirm the exact set with `firewall-cmd --list-all`, and remove anything
+you do not need (A4). Some desktop sharing features will stop working
 until you allow their specific ports; add them back individually as needed (A4).
 
 **Option 2, keep the zone but remove the open range.** If you rely on the
@@ -513,6 +524,19 @@ On Arch and CachyOS the `nft` binary is at `/usr/bin/nft`, so change the first
 line to `#!/usr/bin/nft -f`; the shebang (the `#!` first line) only matters if you
 run the file directly rather than loading it with `nft -f`.
 
+Three things to adjust or add for this ruleset:
+
+- **Non-standard SSH port:** if your SSH server does not listen on port 22, change
+  `tcp dport 22 accept` to your port before you load the file. Loading it and
+  rebooting with the wrong port locks you out, the same risk Step 2 flags for ufw.
+- **Rate-limiting SSH:** this ruleset accepts SSH without the speed bump the ufw
+  track adds with `ufw limit`. Key-only SSH authentication is the stronger control;
+  to also slow repeated attempts, add a per-source-IP `meter` rule for new SSH
+  connections.
+- **Logging drops:** dropped inbound traffic is silent here. To record it, add
+  `log prefix "nftables input drop: " counter drop` as the last rule in the `input`
+  chain; the chain's `policy drop` still drops the packet after it is logged.
+
 ### C2. Load and persist
 
 ```bash
@@ -545,9 +569,11 @@ if you have one on the same network:
 
 ```bash
 # From a SECOND machine, replace with your host's address.
-# A denied port should time out (filtered); an allowed one should connect.
+# An allowed port connects. A blocked port fails: fast with a "prohibited" error
+# if the firewall rejects (firewalld's default), or by timing out if it drops
+# silently (ufw and the nftables ruleset here, or firewalld set to DROP).
 nc -vz server 22      # SSH: expect success
-nc -vz server 9090    # Cockpit, if you removed it: expect a timeout
+nc -vz server 9090    # Cockpit, if you removed it: expect it to fail
 ```
 
 From the host itself, a quick sanity check that SSH survived and the default is
@@ -656,7 +682,7 @@ sudo ufw reset            # wipes rules; you are back to an inactive default-ins
 
 # nftables: stop loading the custom ruleset
 sudo systemctl disable --now nftables
-sudo nft flush ruleset    # clears the running rules until next boot
+sudo nft flush ruleset    # clears the loaded rules now; the disabled service will not reload them
 ```
 
 On a remote host, roll back in the same careful order: make sure SSH is still
